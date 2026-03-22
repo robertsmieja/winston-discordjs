@@ -140,6 +140,43 @@ describe("LogHandlers", () => {
       ])
     })
 
+    it("handles TransformableInfo with 'timestamp' field", () => {
+      const timestamp = "2023-01-01T00:00:00.000Z"
+      const expectedValue = new MessageEmbed({
+        color: 3447003,
+        fields: [
+          {
+            name: "Timestamp",
+            value: timestamp,
+            inline: true,
+          },
+          {
+            name: "Level",
+            value: "info",
+            inline: true,
+          },
+          {
+            name: "Message",
+            value: "hello world",
+            inline: true,
+          },
+        ],
+      })
+
+      expect(
+        handleLogform(
+          {
+            ...transformableInfo,
+            timestamp,
+          },
+          "info"
+        )
+      ).toStrictEqual([
+        `Timestamp: ${timestamp}, Level: info, Message: hello world`,
+        expectedValue,
+      ])
+    })
+
     it("handles TransformableInfo with undefined level", () => {
       const expectedValue = new MessageEmbed({
         color: 0,
