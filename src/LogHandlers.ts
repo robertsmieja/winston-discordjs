@@ -57,13 +57,12 @@ export const handleLogform = (
     messageEmbed.setColor(color)
     const fields = sortFields(Object.keys(info))
 
-    for (const field of fields) {
-      const capitalize = (str: string): string =>
-        str.charAt(0).toLocaleUpperCase() + str.slice(1)
+    const capitalize = (str: string): string =>
+      str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
+    for (const field of fields) {
       if (info[field]) {
-        const fieldsIndex = fields.indexOf(field)
-        if (fieldsIndex !== 0) {
+        if (logMessageString.length > 0) {
           logMessageString += ", "
         }
 
