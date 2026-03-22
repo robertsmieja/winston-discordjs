@@ -53,7 +53,7 @@
   "main": "dist/index.js",
   "name": "winston-discordjs",
   "private": false,
-  "repository": "https://github.com/robbot-discord/winston-discordjs",
+  "repository": "https://github.com/robertsmieja/winston-discordjs",
   "scripts": {
     "build": "npm-run-all --parallel build:js lint",
     "build:js": "tsc",
