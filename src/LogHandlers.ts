@@ -44,6 +44,9 @@ export const handlePrimitive = (info: Primitive): string => {
   }
 }
 
+const capitalize = (str: string): string =>
+  str.charAt(0).toLocaleUpperCase() + str.slice(1)
+
 export const handleLogform = (
   info: TransformableInfo,
   level?: string
@@ -58,9 +61,6 @@ export const handleLogform = (
     const fields = sortFields(Object.keys(info))
 
     for (const field of fields) {
-      const capitalize = (str: string): string =>
-        str.charAt(0).toLocaleUpperCase() + str.slice(1)
-
       if (info[field]) {
         const fieldsIndex = fields.indexOf(field)
         if (fieldsIndex !== 0) {
