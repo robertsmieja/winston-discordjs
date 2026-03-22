@@ -53,9 +53,9 @@ describe("DiscordTransport", () => {
         typeof Discord.Client["prototype"]["on"]
       >
 
-      expect(mockedLogin).toBeCalledTimes(1)
+      expect(mockedLogin).toHaveBeenCalledTimes(1)
       expect(mockedLogin).toHaveBeenCalledWith(options.discordToken)
-      expect(mockedOn).toBeCalledTimes(1)
+      expect(mockedOn).toHaveBeenCalledTimes(1)
       expect(mockedOn).toHaveBeenCalledWith("error", expect.any(Function))
     })
   })
@@ -80,7 +80,7 @@ describe("DiscordTransport", () => {
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).not.toBeCalled()
+      expect(mockSend).not.toHaveBeenCalled()
     })
 
     it("handles (string, undefined) correctly", () => {
@@ -97,7 +97,7 @@ describe("DiscordTransport", () => {
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toBeCalledWith("log me!")
+      expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
     it("handles send() throwing an error", (done) => {
@@ -117,7 +117,7 @@ describe("DiscordTransport", () => {
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.on("warn", (error) => {
         expect(error).toStrictEqual(fakeError)
-        expect(mockSend).toBeCalledWith("log me!")
+        expect(mockSend).toHaveBeenCalledWith("log me!")
         done()
       })
       transport.log("log me!", undefined)
@@ -142,8 +142,8 @@ describe("DiscordTransport", () => {
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.log("log me!", callback)
 
-      expect(mockSend).toBeCalledWith("log me!")
-      expect(callback).toBeCalledTimes(1)
+      expect(mockSend).toHaveBeenCalledWith("log me!")
+      expect(callback).toHaveBeenCalledTimes(1)
     })
 
     describe("close()", () => {
@@ -158,7 +158,7 @@ describe("DiscordTransport", () => {
         transport.discordClient = mockClient
         transport.close()
 
-        expect(mockClient.destroy).toBeCalledTimes(1)
+        expect(mockClient.destroy).toHaveBeenCalledTimes(1)
       })
 
       it("handles undefined discordClient", () => {
