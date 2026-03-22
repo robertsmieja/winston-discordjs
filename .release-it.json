@@ -1,0 +1,23 @@
+{
+  "github": {
+    "release": true
+  },
+  "npm": {
+    "publish": true
+  },
+  "git": {
+    "commitMessage": "chore: release v${version}",
+    "requireCleanWorkingDir": true,
+    "requireBranch": "main"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": "angular",
+      "infile": "CHANGELOG.md"
+    }
+  },
+  "hooks": {
+    "before:init": ["npm run test", "npm run lint"],
+    "after:bump": "npm run build"
+  }
+}

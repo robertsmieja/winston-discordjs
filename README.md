@@ -49,3 +49,19 @@ If an ID is passed in, the Transport requires a `Discord.Client`:
 
 - If one is passed in, we will use it
 - If one is not passed in, we will create one using the given `discordToken`
+
+## Releasing
+
+Releases are handled automatically using `release-it`.
+
+To trigger a release manually from your machine:
+```bash
+npm run release
+```
+
+Alternatively, you can trigger a release using the **GitHub Actions** workflow:
+1. Go to the **Actions** tab in GitHub.
+2. Select the **Release** workflow.
+3. Click **Run workflow**, choose your release type (patch, minor, major), and run it.
+
+**Note:** For GitHub Actions to successfully publish the release, you must configure `NPM_TOKEN` as a secret in your repository settings (a valid npm automation token). `GITHUB_TOKEN` is provided automatically.
