@@ -100,6 +100,26 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
+    it("handles log messages with embeds correctly", () => {
+      const fakeDiscordChannel = {
+        send: jest.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      transport.log({ level: "info", message: "log me!" }, undefined)
+
+      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+        Discord.TextChannel["send"]
+      >
+
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "Level: info, Message: log me!",
+        embeds: [expect.any(Discord.MessageEmbed)],
+      })
+    })
+
     it("handles send() throwing an error", (done) => {
       const fakeError = new Error("fake error")
 
