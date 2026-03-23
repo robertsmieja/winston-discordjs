@@ -60,7 +60,8 @@ export const handleLogform = (
     const capitalize = (str: string): string =>
       str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
-    for (const field of fields) {
+    for (let i = 0; i < fields.length; i++) {
+      const field = fields[i]
       if (info[field]) {
         if (logMessageString.length > 0) {
           logMessageString += ", "
