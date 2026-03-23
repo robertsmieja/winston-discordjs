@@ -10,6 +10,8 @@ export const isTransformableInfo = (
 }
 
 const sortFields = (fields: string[]): string[] => {
+  // This array defines the exact, fixed order in which priority fields
+  // ("timestamp", "level", "message") must appear in the final output.
   const priorityFields = ["timestamp", "level", "message"]
   const presentPriorityFields = priorityFields.filter((field) =>
     fields.includes(field)
