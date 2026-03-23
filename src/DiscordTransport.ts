@@ -1,4 +1,3 @@
-import * as Transport from "winston-transport"
 import {
   TextChannel,
   Client,
@@ -10,7 +9,7 @@ import TransportStream from "winston-transport"
 import { handleInfo } from "./LogHandlers"
 
 export interface DiscordTransportStreamOptions
-  extends Transport.TransportStreamOptions {
+  extends TransportStream.TransportStreamOptions {
   discordClient?: Client
   discordToken?: string
   discordChannel?: string | TextChannel
