@@ -349,6 +349,12 @@ describe("LogHandlers", () => {
       const testObject = { toString: "hello world" }
       expect(handleObject(testObject)).toBe(JSON.stringify(testObject))
     })
+
+    it("handles circular objects without throwing", () => {
+      const testObject: any = Object.create(null)
+      testObject.myself = testObject
+      expect(handleObject(testObject)).toBe("[object Object]")
+    })
   })
 
   describe("handleInfo()", () => {
