@@ -166,6 +166,26 @@ describe("DiscordTransport", () => {
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
+    it("handles (string, object) correctly", () => {
+      const fakeDiscordChannel = {
+        send: jest.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+        Discord.TextChannel["send"]
+      >
+
+      // pass a truthy non-function object as callback
+      expect(() => {
+        transport.log("log me!", {} as any)
+      }).not.toThrow()
+
+      expect(mockSend).toHaveBeenCalledWith("log me!")
+    })
+
     describe("close()", () => {
       let transport: DiscordTransport
       beforeEach(() => {
