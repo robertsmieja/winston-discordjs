@@ -10,14 +10,33 @@ export const isTransformableInfo = (
 }
 
 const sortFields = (fields: string[]): string[] => {
+  // ⚡ Bolt Optimization: Replace O(N*M) multiple array passes (.filter and .includes)
+  // with a single O(N) pass loop to extract and sort priority fields.
   // This array defines the exact, fixed order in which priority fields
   // ("timestamp", "level", "message") must appear in the final output.
-  const priorityFields = ["timestamp", "level", "message"]
-  const presentPriorityFields = priorityFields.filter((field) =>
-    fields.includes(field)
-  )
-  const otherFields = fields.filter((field) => !priorityFields.includes(field))
-  return [...presentPriorityFields, ...otherFields]
+  let hasTimestamp = false
+  let hasLevel = false
+  let hasMessage = false
+  const otherFields: string[] = []
+
+  for (let i = 0; i < fields.length; i++) {
+    const field = fields[i]
+    if (field === "timestamp") hasTimestamp = true
+    else if (field === "level") hasLevel = true
+    else if (field === "message") hasMessage = true
+    else otherFields.push(field)
+  }
+
+  const result: string[] = []
+  if (hasTimestamp) result.push("timestamp")
+  if (hasLevel) result.push("level")
+  if (hasMessage) result.push("message")
+
+  for (let i = 0; i < otherFields.length; i++) {
+    result.push(otherFields[i])
+  }
+
+  return result
 }
 
 export const handlePrimitive = (info: Primitive): string => {
@@ -44,8 +63,9 @@ export const handleLogform = (
     messageEmbed.setColor(color)
     const fields = sortFields(Object.keys(info))
 
+    // ⚡ Bolt Optimization: Replace toLocaleUpperCase() with faster toUpperCase()
     const capitalize = (str: string): string =>
-      str.charAt(0).toLocaleUpperCase() + str.slice(1)
+      str.charAt(0).toUpperCase() + str.slice(1)
 
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
