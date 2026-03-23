@@ -70,10 +70,10 @@ describe("DiscordTransport", () => {
         on: jest.fn(),
       } as Partial<Discord.Client>
 
-      const originalClient = Discord.Client
-
       // temporarily override the mock so we control `on`
-      jest.spyOn(Discord, "Client").mockImplementationOnce(() => fakeDiscordClient as any)
+      jest
+        .spyOn(Discord, "Client")
+        .mockImplementationOnce(() => fakeDiscordClient as any)
 
       const transport = new DiscordTransport(options)
 
