@@ -10,8 +10,6 @@ export const isTransformableInfo = (
 }
 
 const sortFields = (fields: string[]): string[] => {
-  // ⚡ Bolt Optimization: Replace O(N*M) multiple array passes (.filter and .includes)
-  // with a single O(N) pass loop to extract and sort priority fields.
   // This array defines the exact, fixed order in which priority fields
   // ("timestamp", "level", "message") must appear in the final output.
   let hasTimestamp = false
@@ -63,7 +61,6 @@ export const handleLogform = (
     messageEmbed.setColor(color)
     const fields = sortFields(Object.keys(info))
 
-    // ⚡ Bolt Optimization: Replace toLocaleUpperCase() with faster toUpperCase()
     const capitalize = (str: string): string =>
       str.charAt(0).toUpperCase() + str.slice(1)
 

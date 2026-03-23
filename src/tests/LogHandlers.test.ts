@@ -177,6 +177,33 @@ describe("LogHandlers", () => {
       ])
     })
 
+    it("handles TransformableInfo preserving the expected priority field order", () => {
+      const expectedValue = new MessageEmbed({
+        color: 3447003,
+        fields: [
+          { name: "Timestamp", value: "test time", inline: true },
+          { name: "Level", value: "info", inline: true },
+          { name: "Message", value: "hello world", inline: true },
+          { name: "Other", value: "other data", inline: true },
+        ],
+      })
+
+      expect(
+        handleLogform(
+          {
+            other: "other data",
+            message: "hello world",
+            timestamp: "test time",
+            level: "info",
+          },
+          "info"
+        )
+      ).toStrictEqual([
+        "Timestamp: test time, Level: info, Message: hello world, Other: other data",
+        expectedValue,
+      ])
+    })
+
     it("handles TransformableInfo with 'timestamp' field", () => {
       const timestamp = "2023-01-01T00:00:00.000Z"
       const expectedValue = new MessageEmbed({
