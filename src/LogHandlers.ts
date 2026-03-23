@@ -88,8 +88,12 @@ export const handleObject = (
   ) {
     return info.toString()
   } else {
-    // this will call toJSON on the object, if it exists
-    return JSON.stringify(info)
+    try {
+      // this will call toJSON on the object, if it exists
+      return JSON.stringify(info)
+    } catch (err) {
+      return "[object Object]"
+    }
   }
 }
 
