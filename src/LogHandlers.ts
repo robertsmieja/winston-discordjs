@@ -50,7 +50,7 @@ export const handleLogform = (
 ): [string, MessageEmbed] | undefined => {
   if ((level && level === info.level) || !level) {
     const messageEmbed = new MessageEmbed()
-    let logMessageString = ""
+    const logMessageParts: string[] = []
     const color = level
       ? LogLevelToColor[level as LogLevel] ?? "DEFAULT"
       : "DEFAULT"
@@ -62,19 +62,15 @@ export const handleLogform = (
 
     for (const field of fields) {
       if (info[field]) {
-        if (logMessageString.length > 0) {
-          logMessageString += ", "
-        }
-
         const capitalizedField = capitalize(field)
         const value = info[field]
 
-        logMessageString += `${capitalizedField}: ${value}`
+        logMessageParts.push(`${capitalizedField}: ${value}`)
         messageEmbed.addField(capitalizedField, value.toString(), true)
       }
     }
 
-    return [logMessageString, messageEmbed]
+    return [logMessageParts.join(", "), messageEmbed]
   }
 
   return undefined
