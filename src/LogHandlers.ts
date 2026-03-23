@@ -47,7 +47,8 @@ export const handleLogform = (
     const capitalize = (str: string): string =>
       str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
-    // Discord Embed Limits:
+    // Discord Embed & Message Limits
+    // Documented at: https://discord.com/developers/docs/resources/message#embed-object-embed-limits
     // - Field name: 256 characters
     // - Field value: 1024 characters
     // - Total fields: 25
