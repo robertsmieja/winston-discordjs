@@ -47,6 +47,15 @@ export const handleLogform = (
     const capitalize = (str: string): string =>
       str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
+    // Discord Embed Limits:
+    // - Field name: 256 characters
+    // - Field value: 1024 characters
+    // - Total fields: 25
+    // - Total embed characters: 6000
+    // Discord Message Content Limit: 2000 characters
+    let fieldCount = 0;
+    let totalEmbedLength = 0;
+
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
       if (info[field]) {
@@ -54,11 +63,39 @@ export const handleLogform = (
         const value = info[field]
 
         logMessageParts.push(`${capitalizedField}: ${value}`)
-        messageEmbed.addField(capitalizedField, value.toString(), true)
+
+        if (fieldCount < 25 && totalEmbedLength < 6000) {
+          let truncatedName = capitalizedField.substring(0, 256)
+          let truncatedValue = value.toString().substring(0, 1024)
+
+          // Ensure we don't exceed the 6000 character total limit for embeds
+          const availableSpace = 6000 - totalEmbedLength
+          const fieldLength = truncatedName.length + truncatedValue.length
+
+          if (fieldLength > availableSpace) {
+            if (truncatedName.length >= availableSpace) {
+              // Not even enough room for the name, stop adding fields
+              break
+            } else {
+              // Truncate the value to fit the remaining space
+              truncatedValue = truncatedValue.substring(0, availableSpace - truncatedName.length)
+            }
+          }
+
+          // Ensure we don't add empty fields
+          if (truncatedName && truncatedValue) {
+            messageEmbed.addField(truncatedName, truncatedValue, true)
+            totalEmbedLength += truncatedName.length + truncatedValue.length
+            fieldCount++
+          }
+        }
       }
     }
 
-    return [logMessageParts.join(", "), messageEmbed]
+    const fullMessage = logMessageParts.join(", ")
+    const truncatedMessage = fullMessage.substring(0, 2000)
+
+    return [truncatedMessage, messageEmbed]
   }
 
   return undefined

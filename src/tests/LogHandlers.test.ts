@@ -247,6 +247,71 @@ describe("LogHandlers", () => {
         expectedTransformableInfoResult,
       ])
     })
+
+    it("truncates fields and limits to 25 fields for Discord limits", () => {
+      const longName = "A".repeat(300)
+      const longValue = "B".repeat(2000)
+
+      const info: logform.TransformableInfo = {
+        level: "info",
+        message: "hello",
+      }
+
+      // Add 30 additional fields (32 total fields with level and message)
+      for (let i = 0; i < 30; i++) {
+        info[`${longName}${i}`] = longValue
+      }
+
+      const result = handleLogform(info, "info")
+      expect(result).toBeDefined()
+
+      const resultTuple = result as [string, MessageEmbed]
+      const [messageContent, embed] = resultTuple
+
+      // Total message content should be capped at 2000 chars
+      expect(messageContent.length).toBeLessThanOrEqual(2000)
+
+      // Embed fields might be less than 25 because of the 6000 aggregate limit.
+      // 300 name + 2000 value (truncated to 256 + 1024 = 1280 per field)
+      // 6000 / 1280 ~ 4 fields + message + level
+      expect(embed.fields.length).toBeLessThanOrEqual(25)
+
+      // Every field name should be <= 256
+      // Every field value should be <= 1024
+      for (const field of embed.fields) {
+        expect(field.name.length).toBeLessThanOrEqual(256)
+        expect(field.value.length).toBeLessThanOrEqual(1024)
+      }
+    })
+
+    it("enforces the 6000 total character limit for embeds", () => {
+      const longName = "A".repeat(250)
+      const longValue = "B".repeat(1000)
+
+      const info: logform.TransformableInfo = {
+        level: "info",
+        message: "hello",
+      }
+
+      // Add 10 fields, which would be 12500 chars total, way above 6000
+      for (let i = 0; i < 10; i++) {
+        info[`${longName}${i}`] = longValue
+      }
+
+      const result = handleLogform(info, "info")
+      expect(result).toBeDefined()
+
+      const resultTuple = result as [string, MessageEmbed]
+      const [, embed] = resultTuple
+
+      let totalLength = 0
+      for (const field of embed.fields) {
+        totalLength += field.name.length + field.value.length
+      }
+
+      // Total length should be strictly <= 6000
+      expect(totalLength).toBeLessThanOrEqual(6000)
+    })
   })
 
   describe("handleObject()", () => {
