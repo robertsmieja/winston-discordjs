@@ -48,6 +48,12 @@ export const handlePrimitive = (info: Primitive): string => {
   }
 }
 
+// Optimization: Lifted out of handleLogform to prevent closure recreation.
+// Uses toUpperCase() instead of toLocaleUpperCase() for faster execution
+// and safety when capitalizing hardcoded system strings/object keys.
+const capitalize = (str: string): string =>
+  str.charAt(0).toUpperCase() + str.slice(1)
+
 export const handleLogform = (
   info: TransformableInfo,
   level?: string
@@ -60,9 +66,6 @@ export const handleLogform = (
       : "DEFAULT"
     messageEmbed.setColor(color)
     const fields = sortFields(Object.keys(info))
-
-    const capitalize = (str: string): string =>
-      str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
     // Discord Embed & Message Limits
     // Documented at: https://discord.com/developers/docs/resources/message#embed-object-embed-limits
