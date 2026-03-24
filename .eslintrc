@@ -1,16 +1,11 @@
 {
-  "env": {
-    "jest": true
-  },
   "extends": [
     "plugin:@typescript-eslint/recommended",
-    "plugin:prettier/recommended",
-    "plugin:jest/recommended"
+    "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "jest"],
+  "plugins": ["@typescript-eslint"],
   "rules": {
-    "@typescript-eslint/no-explicit-any": "off",
-    "jest/no-done-callback": "off"
+    "@typescript-eslint/no-explicit-any": "off"
   }
 }
