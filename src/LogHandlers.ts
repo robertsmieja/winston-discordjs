@@ -12,12 +12,29 @@ export const isTransformableInfo = (
 const sortFields = (fields: string[]): string[] => {
   // This array defines the exact, fixed order in which priority fields
   // ("timestamp", "level", "message") must appear in the final output.
-  const priorityFields = ["timestamp", "level", "message"]
-  const presentPriorityFields = priorityFields.filter((field) =>
-    fields.includes(field)
-  )
-  const otherFields = fields.filter((field) => !priorityFields.includes(field))
-  return [...presentPriorityFields, ...otherFields]
+  let hasTimestamp = false
+  let hasLevel = false
+  let hasMessage = false
+  const otherFields: string[] = []
+
+  for (let i = 0; i < fields.length; i++) {
+    const field = fields[i]
+    if (field === "timestamp") hasTimestamp = true
+    else if (field === "level") hasLevel = true
+    else if (field === "message") hasMessage = true
+    else otherFields.push(field)
+  }
+
+  const result: string[] = []
+  if (hasTimestamp) result.push("timestamp")
+  if (hasLevel) result.push("level")
+  if (hasMessage) result.push("message")
+
+  for (let i = 0; i < otherFields.length; i++) {
+    result.push(otherFields[i])
+  }
+
+  return result
 }
 
 export const handlePrimitive = (info: Primitive): string => {
