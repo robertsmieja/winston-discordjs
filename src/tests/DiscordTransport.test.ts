@@ -79,7 +79,7 @@ describe("DiscordTransport", () => {
       const transport = new DiscordTransport(options)
 
       const discordClientOn = fakeDiscordClient.on as jest.MockedFunction<
-        typeof Discord.Client["prototype"]["on"]
+        (typeof Discord.Client)["prototype"]["on"]
       >
 
       const fakeError = new Error("discord client error")
