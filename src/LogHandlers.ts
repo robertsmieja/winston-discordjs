@@ -49,10 +49,9 @@ export const handlePrimitive = (info: Primitive): string => {
 }
 
 // Optimization: Lifted out of handleLogform to prevent closure recreation.
-// Uses toUpperCase() instead of toLocaleUpperCase() for faster execution
-// and safety when capitalizing hardcoded system strings/object keys.
+// Reverted back to `toLocaleUpperCase()` based on explicit user request.
 const capitalize = (str: string): string =>
-  str.charAt(0).toUpperCase() + str.slice(1)
+  str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
 export const handleLogform = (
   info: TransformableInfo,
