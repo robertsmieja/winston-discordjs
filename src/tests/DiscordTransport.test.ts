@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, MockedFunction } from "vitest"
 import DiscordTransport, {
   DiscordTransportStreamOptions,
 } from "../DiscordTransport"
@@ -47,11 +47,10 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      const mockedLogin =
-        discordClient.login as import("vitest").MockedFunction<
-          (typeof Discord.Client)["prototype"]["login"]
-        >
-      const mockedOn = discordClient.on as import("vitest").MockedFunction<
+      const mockedLogin = discordClient.login as MockedFunction<
+        (typeof Discord.Client)["prototype"]["login"]
+      >
+      const mockedOn = discordClient.on as MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
 
@@ -78,10 +77,9 @@ describe("DiscordTransport", () => {
 
       transport.log(undefined, undefined)
 
-      const mockSend =
-        fakeDiscordChannel.send as import("vitest").MockedFunction<
-          Discord.TextChannel["send"]
-        >
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
+        Discord.TextChannel["send"]
+      >
 
       expect(mockSend).not.toHaveBeenCalled()
     })
@@ -96,10 +94,9 @@ describe("DiscordTransport", () => {
 
       transport.log("log me!", undefined)
 
-      const mockSend =
-        fakeDiscordChannel.send as import("vitest").MockedFunction<
-          Discord.TextChannel["send"]
-        >
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
+        Discord.TextChannel["send"]
+      >
 
       expect(mockSend).toHaveBeenCalledWith("log me!")
     })
@@ -114,10 +111,9 @@ describe("DiscordTransport", () => {
 
       transport.log({ level: "info", message: "log me!" }, undefined)
 
-      const mockSend =
-        fakeDiscordChannel.send as import("vitest").MockedFunction<
-          Discord.TextChannel["send"]
-        >
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
+        Discord.TextChannel["send"]
+      >
 
       expect(mockSend).toHaveBeenCalledWith({
         content: "Level: info, Message: log me!",
@@ -136,10 +132,9 @@ describe("DiscordTransport", () => {
         } as Partial<Discord.TextChannel>
         transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-        const mockSend =
-          fakeDiscordChannel.send as import("vitest").MockedFunction<
-            Discord.TextChannel["send"]
-          >
+        const mockSend = fakeDiscordChannel.send as MockedFunction<
+          Discord.TextChannel["send"]
+        >
 
         transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
         transport.on("warn", (error) => {
@@ -163,10 +158,9 @@ describe("DiscordTransport", () => {
 
       transport.log("log me!", undefined)
 
-      const mockSend =
-        fakeDiscordChannel.send as import("vitest").MockedFunction<
-          Discord.TextChannel["send"]
-        >
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
+        Discord.TextChannel["send"]
+      >
 
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.log("log me!", callback)
@@ -183,10 +177,9 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const mockSend =
-        fakeDiscordChannel.send as import("vitest").MockedFunction<
-          Discord.TextChannel["send"]
-        >
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
+        Discord.TextChannel["send"]
+      >
 
       // pass a truthy non-function object as callback
       expect(() => {
