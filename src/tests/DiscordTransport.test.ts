@@ -47,10 +47,10 @@ describe("DiscordTransport", () => {
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
       const mockedLogin = discordClient.login as jest.MockedFunction<
-        typeof Discord.Client["prototype"]["login"]
+        (typeof Discord.Client)["prototype"]["login"]
       >
       const mockedOn = discordClient.on as jest.MockedFunction<
-        typeof Discord.Client["prototype"]["on"]
+        (typeof Discord.Client)["prototype"]["on"]
       >
 
       expect(mockedLogin).toHaveBeenCalledTimes(1)
