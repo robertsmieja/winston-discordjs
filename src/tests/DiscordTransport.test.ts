@@ -58,6 +58,43 @@ describe("DiscordTransport", () => {
       expect(mockedOn).toHaveBeenCalledTimes(1)
       expect(mockedOn).toHaveBeenCalledWith("error", expect.any(Function))
     })
+
+    it("emits warn event when discordClient emits error", () => {
+      const options: DiscordTransportStreamOptions = {
+        discordToken: "EXAMPLE_API_TOKEN",
+      }
+
+      // Recreate how discordClient is handled in the previous test
+      const fakeDiscordClient = {
+        login: jest.fn(),
+        on: jest.fn(),
+      } as Partial<Discord.Client>
+
+      // temporarily override the mock so we control `on`
+      jest
+        .spyOn(Discord, "Client")
+        .mockImplementationOnce(() => fakeDiscordClient as any)
+
+      const transport = new DiscordTransport(options)
+
+      const discordClientOn = fakeDiscordClient.on as jest.MockedFunction<
+        typeof Discord.Client["prototype"]["on"]
+      >
+
+      const fakeError = new Error("discord client error")
+
+      const emitSpy = jest.spyOn(transport, "emit")
+
+      const errorCallback = discordClientOn.mock.calls.find(
+        (call) => call[0] === "error"
+      )?.[1] as (error: Error) => void
+
+      expect(errorCallback).toBeDefined()
+      if (errorCallback) {
+        errorCallback(fakeError)
+      }
+      expect(emitSpy).toHaveBeenCalledWith("warn", fakeError)
+    })
   })
 
   describe("log()", () => {
