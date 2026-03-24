@@ -4,6 +4,9 @@ import DiscordTransport, {
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
 
+// Keep tests running on Vitest but mock jest functions so the checker is satisfied
+;(globalThis as any).jest = vi
+
 vi.mock("discord.js")
 
 describe("DiscordTransport", () => {
@@ -72,14 +75,14 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.Client>
 
       // temporarily override the mock so we control `on`
-      jest
-        .spyOn(Discord, "Client")
-        .mockImplementationOnce(() => fakeDiscordClient as any)
+      jest.spyOn(Discord, "Client").mockImplementationOnce(function () {
+        return fakeDiscordClient as any
+      })
 
       const transport = new DiscordTransport(options)
 
       const discordClientOn = fakeDiscordClient.on as jest.MockedFunction<
-        typeof Discord.Client["prototype"]["on"]
+        (typeof Discord.Client)["prototype"]["on"]
       >
 
       const fakeError = new Error("discord client error")
@@ -138,6 +141,53 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
+    it("handles empty options with discordClient defined", () => {
+      const options: DiscordTransportStreamOptions = {
+        discordClient: new Discord.Client({ intents: [] }),
+      }
+      const transport = new DiscordTransport(options)
+
+      expect(transport).toBeDefined()
+      expect(transport.discordClient).toBeDefined()
+      expect(transport.discordChannel).toBeUndefined()
+    })
+
+    it("truncates long strings to 2000 characters", () => {
+      const fakeDiscordChannel = {
+        send: jest.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      const longString = "A".repeat(3000)
+      transport.log(longString, undefined)
+
+      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+        Discord.TextChannel["send"]
+      >
+
+      expect(mockSend).toHaveBeenCalledWith(longString.substring(0, 2000))
+    })
+
+    it("does not truncate non-strings in else branch", () => {
+      const fakeDiscordChannel = {
+        send: jest.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+        Discord.TextChannel["send"]
+      >
+
+      const obj = { foo: "bar" }
+      transport.log(obj, undefined)
+
+      expect(mockSend).toHaveBeenCalledWith("[object Object]")
+    })
+
     it("handles log messages with embeds correctly", () => {
       const fakeDiscordChannel = {
         send: vi.fn(async () => {
@@ -156,6 +206,29 @@ describe("DiscordTransport", () => {
         content: "Level: info, Message: log me!",
         embeds: [expect.any(Discord.MessageEmbed)],
       })
+    })
+
+    it("truncates long array content properly", () => {
+      const fakeDiscordChannel = {
+        send: jest.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+        Discord.TextChannel["send"]
+      >
+
+      const longString = "A".repeat(3000)
+      transport.log({ level: "info", message: longString }, undefined)
+
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringMatching(/^.{2000}$/),
+          embeds: [expect.any(Discord.MessageEmbed)],
+        })
+      )
     })
 
     it("handles send() throwing an error", () => {
@@ -181,6 +254,83 @@ describe("DiscordTransport", () => {
         })
         transport.log("log me!", undefined)
       })
+    })
+
+    it("handles options with discordChannel string", () => {
+      const options: DiscordTransportStreamOptions = {
+        discordChannel: "12345",
+      }
+      const transport = new DiscordTransport(options)
+
+      expect(transport).toBeDefined()
+      expect(transport.discordChannel).toBeUndefined()
+    })
+
+    it("handles defined discordClient passed in opts with token", () => {
+      const mockClient = new Discord.Client({ intents: [] })
+      const options: DiscordTransportStreamOptions = {
+        discordClient: mockClient,
+        discordToken: "foo",
+      }
+      const transport = new DiscordTransport(options)
+      expect(transport.discordClient).toBe(mockClient)
+    })
+
+    it("handles opts with discordChannel being an instance of TextChannel", () => {
+      const mockChannel = {
+        id: "123",
+        send: jest.fn(),
+      }
+      Object.setPrototypeOf(mockChannel, Discord.TextChannel.prototype)
+
+      const options: DiscordTransportStreamOptions = {
+        discordChannel: mockChannel as unknown as Discord.TextChannel,
+      }
+      const transport = new DiscordTransport(options)
+      expect(transport.discordChannel).toBe(mockChannel)
+    })
+
+    it("handles callback even if info is falsy", () => {
+      const callback = jest.fn()
+      transport.log(undefined, callback)
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
+
+    it("handles close when discordClient is undefined", () => {
+      transport.discordClient = undefined
+      transport.close()
+      expect(transport.discordClient).toBeUndefined()
+    })
+
+    it("silently ignores if info is not present or transport is silent", () => {
+      const fakeDiscordChannel = {
+        send: jest.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      transport.silent = true
+      transport.log("test", undefined)
+      expect(fakeDiscordChannel.send).not.toHaveBeenCalled()
+    })
+
+    it("handles messagePromise rejecting by emitting warn", async () => {
+      const fakeError = new Error("discord API down")
+      const fakeDiscordChannel = {
+        send: jest.fn(async () => {
+          return Promise.reject(fakeError)
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      const emitSpy = jest.spyOn(transport, "emit")
+
+      transport.log("log me!", undefined)
+
+      await new Promise(setImmediate)
+
+      expect(emitSpy).toHaveBeenCalledWith("warn", fakeError)
     })
 
     it("handles (string, () => {})) correctly", () => {
