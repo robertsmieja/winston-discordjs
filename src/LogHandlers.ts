@@ -62,7 +62,7 @@ export const handleLogform = (
     const fields = sortFields(Object.keys(info))
 
     const capitalize = (str: string): string =>
-      str.charAt(0).toUpperCase() + str.slice(1)
+      str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
