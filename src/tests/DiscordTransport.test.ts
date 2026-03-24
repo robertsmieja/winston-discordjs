@@ -3,7 +3,17 @@ import DiscordTransport, {
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
 
-jest.mock("discord.js")
+jest.mock("discord.js", () => {
+  return {
+    ...jest.requireActual("discord.js"),
+    Client: jest.fn().mockImplementation(() => {
+      return {
+        login: jest.fn().mockResolvedValue("TOKEN"),
+        on: jest.fn(),
+      }
+    }),
+  }
+})
 
 describe("DiscordTransport", () => {
   describe("constructor", () => {
@@ -33,7 +43,7 @@ describe("DiscordTransport", () => {
       const fakeChannelManager = {} as Partial<Discord.ChannelManager>
 
       const fakeDiscordClient = {
-        login: jest.fn(),
+        login: jest.fn().mockResolvedValue("TOKEN"),
         on: jest.fn(),
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
