@@ -1,9 +1,10 @@
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import DiscordTransport, {
   DiscordTransportStreamOptions,
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
 
-jest.mock("discord.js")
+vi.mock("discord.js")
 
 describe("DiscordTransport", () => {
   describe("constructor", () => {
@@ -33,8 +34,8 @@ describe("DiscordTransport", () => {
       const fakeChannelManager = {} as Partial<Discord.ChannelManager>
 
       const fakeDiscordClient = {
-        login: jest.fn(),
-        on: jest.fn(),
+        login: vi.fn(),
+        on: vi.fn(),
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
 
@@ -46,10 +47,11 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      const mockedLogin = discordClient.login as jest.MockedFunction<
-        (typeof Discord.Client)["prototype"]["login"]
-      >
-      const mockedOn = discordClient.on as jest.MockedFunction<
+      const mockedLogin =
+        discordClient.login as import("vitest").MockedFunction<
+          (typeof Discord.Client)["prototype"]["login"]
+        >
+      const mockedOn = discordClient.on as import("vitest").MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
 
@@ -68,7 +70,7 @@ describe("DiscordTransport", () => {
 
     it("handles (undefined, undefined) correctly", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
@@ -76,16 +78,17 @@ describe("DiscordTransport", () => {
 
       transport.log(undefined, undefined)
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
-        Discord.TextChannel["send"]
-      >
+      const mockSend =
+        fakeDiscordChannel.send as import("vitest").MockedFunction<
+          Discord.TextChannel["send"]
+        >
 
       expect(mockSend).not.toHaveBeenCalled()
     })
 
     it("handles (string, undefined) correctly", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
@@ -93,16 +96,17 @@ describe("DiscordTransport", () => {
 
       transport.log("log me!", undefined)
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
-        Discord.TextChannel["send"]
-      >
+      const mockSend =
+        fakeDiscordChannel.send as import("vitest").MockedFunction<
+          Discord.TextChannel["send"]
+        >
 
       expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
     it("handles log messages with embeds correctly", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
@@ -110,9 +114,10 @@ describe("DiscordTransport", () => {
 
       transport.log({ level: "info", message: "log me!" }, undefined)
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
-        Discord.TextChannel["send"]
-      >
+      const mockSend =
+        fakeDiscordChannel.send as import("vitest").MockedFunction<
+          Discord.TextChannel["send"]
+        >
 
       expect(mockSend).toHaveBeenCalledWith({
         content: "Level: info, Message: log me!",
@@ -120,34 +125,37 @@ describe("DiscordTransport", () => {
       })
     })
 
-    it("handles send() throwing an error", (done) => {
-      const fakeError = new Error("fake error")
+    it("handles send() throwing an error", () => {
+      return new Promise<void>((resolve) => {
+        const fakeError = new Error("fake error")
 
-      const fakeDiscordChannel = {
-        send: jest.fn(async () => {
-          throw fakeError
-        }) as unknown,
-      } as Partial<Discord.TextChannel>
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+        const fakeDiscordChannel = {
+          send: vi.fn(async () => {
+            throw fakeError
+          }) as unknown,
+        } as Partial<Discord.TextChannel>
+        transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
-        Discord.TextChannel["send"]
-      >
+        const mockSend =
+          fakeDiscordChannel.send as import("vitest").MockedFunction<
+            Discord.TextChannel["send"]
+          >
 
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
-      transport.on("warn", (error) => {
-        expect(error).toStrictEqual(fakeError)
-        expect(mockSend).toHaveBeenCalledWith("log me!")
-        done()
+        transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+        transport.on("warn", (error) => {
+          expect(error).toStrictEqual(fakeError)
+          expect(mockSend).toHaveBeenCalledWith("log me!")
+          resolve()
+        })
+        transport.log("log me!", undefined)
       })
-      transport.log("log me!", undefined)
     })
 
     it("handles (string, () => {})) correctly", () => {
-      const callback = jest.fn()
+      const callback = vi.fn()
 
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
@@ -155,9 +163,10 @@ describe("DiscordTransport", () => {
 
       transport.log("log me!", undefined)
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
-        Discord.TextChannel["send"]
-      >
+      const mockSend =
+        fakeDiscordChannel.send as import("vitest").MockedFunction<
+          Discord.TextChannel["send"]
+        >
 
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.log("log me!", callback)
@@ -168,15 +177,16 @@ describe("DiscordTransport", () => {
 
     it("handles (string, object) correctly", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
-        Discord.TextChannel["send"]
-      >
+      const mockSend =
+        fakeDiscordChannel.send as import("vitest").MockedFunction<
+          Discord.TextChannel["send"]
+        >
 
       // pass a truthy non-function object as callback
       expect(() => {
@@ -193,7 +203,7 @@ describe("DiscordTransport", () => {
       })
       it("destroys discordClient if defined", () => {
         const mockClient = new Discord.Client({ intents: [] })
-        mockClient.destroy = jest.fn()
+        mockClient.destroy = vi.fn()
 
         transport.discordClient = mockClient
         transport.close()
