@@ -72,9 +72,7 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.Client>
 
       // temporarily override the mock so we control `on`
-      vi.spyOn(Discord, "Client").mockImplementationOnce(function (
-        this: any
-      ) {
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
         return fakeDiscordClient as any
       } as any)
 
