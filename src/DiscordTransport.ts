@@ -54,14 +54,25 @@ export class DiscordTransport extends TransportStream {
       if (this.discordChannel && logMessage) {
         let messagePromise: Promise<Message>
         if (Array.isArray(logMessage)) {
-          const content = logMessage[0]
+          let content = logMessage[0]
+          // Enforce Discord API limit: Content <= 2000 characters
+          // https://discord.com/developers/docs/resources/message
+          if (typeof content === "string") {
+            content = content.substring(0, 2000)
+          }
           const embed = logMessage[1]
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
           })
         } else {
-          messagePromise = this.discordChannel.send(logMessage)
+          let content = logMessage
+          // Enforce Discord API limit: Content <= 2000 characters
+          // https://discord.com/developers/docs/resources/message
+          if (typeof content === "string") {
+            content = content.substring(0, 2000)
+          }
+          messagePromise = this.discordChannel.send(content)
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
