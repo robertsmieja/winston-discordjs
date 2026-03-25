@@ -67,24 +67,24 @@ describe("DiscordTransport", () => {
 
       // Recreate how discordClient is handled in the previous test
       const fakeDiscordClient = {
-        login: jest.fn(),
-        on: jest.fn(),
+        login: vi.fn(),
+        on: vi.fn(),
       } as Partial<Discord.Client>
 
       // temporarily override the mock so we control `on`
-      jest
-        .spyOn(Discord, "Client")
-        .mockImplementationOnce(() => fakeDiscordClient as any)
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        return fakeDiscordClient as any
+      } as any)
 
       const transport = new DiscordTransport(options)
 
-      const discordClientOn = fakeDiscordClient.on as jest.MockedFunction<
-        typeof Discord.Client["prototype"]["on"]
+      const discordClientOn = fakeDiscordClient.on as MockedFunction<
+        (typeof Discord.Client)["prototype"]["on"]
       >
 
       const fakeError = new Error("discord client error")
 
-      const emitSpy = jest.spyOn(transport, "emit")
+      const emitSpy = vi.spyOn(transport, "emit")
 
       const errorCallback = discordClientOn.mock.calls.find(
         (call) => call[0] === "error"
