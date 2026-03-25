@@ -4,9 +4,6 @@ import DiscordTransport, {
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
 
-// Keep tests running on Vitest but mock jest functions so the checker is satisfied
-;(globalThis as any).jest = vi
-
 vi.mock("discord.js")
 
 describe("DiscordTransport", () => {
@@ -70,24 +67,24 @@ describe("DiscordTransport", () => {
 
       // Recreate how discordClient is handled in the previous test
       const fakeDiscordClient = {
-        login: jest.fn(),
-        on: jest.fn(),
+        login: vi.fn(),
+        on: vi.fn(),
       } as Partial<Discord.Client>
 
       // temporarily override the mock so we control `on`
-      jest.spyOn(Discord, "Client").mockImplementationOnce(function () {
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function () {
         return fakeDiscordClient as any
       })
 
       const transport = new DiscordTransport(options)
 
-      const discordClientOn = fakeDiscordClient.on as jest.MockedFunction<
+      const discordClientOn = fakeDiscordClient.on as MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
 
       const fakeError = new Error("discord client error")
 
-      const emitSpy = jest.spyOn(transport, "emit")
+      const emitSpy = vi.spyOn(transport, "emit")
 
       const errorCallback = discordClientOn.mock.calls.find(
         (call) => call[0] === "error"
@@ -154,7 +151,7 @@ describe("DiscordTransport", () => {
 
     it("truncates long strings to 2000 characters", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
@@ -163,7 +160,7 @@ describe("DiscordTransport", () => {
       const longString = "A".repeat(3000)
       transport.log(longString, undefined)
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
         Discord.TextChannel["send"]
       >
 
@@ -172,13 +169,13 @@ describe("DiscordTransport", () => {
 
     it("does not truncate non-strings in else branch", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
         Discord.TextChannel["send"]
       >
 
@@ -210,13 +207,13 @@ describe("DiscordTransport", () => {
 
     it("truncates long array content properly", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const mockSend = fakeDiscordChannel.send as jest.MockedFunction<
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
         Discord.TextChannel["send"]
       >
 
@@ -279,7 +276,7 @@ describe("DiscordTransport", () => {
     it("handles opts with discordChannel being an instance of TextChannel", () => {
       const mockChannel = {
         id: "123",
-        send: jest.fn(),
+        send: vi.fn(),
       }
       Object.setPrototypeOf(mockChannel, Discord.TextChannel.prototype)
 
@@ -291,7 +288,7 @@ describe("DiscordTransport", () => {
     })
 
     it("handles callback even if info is falsy", () => {
-      const callback = jest.fn()
+      const callback = vi.fn()
       transport.log(undefined, callback)
       expect(callback).toHaveBeenCalledTimes(1)
     })
@@ -304,7 +301,7 @@ describe("DiscordTransport", () => {
 
     it("silently ignores if info is not present or transport is silent", () => {
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return {}
         }) as unknown,
       } as Partial<Discord.TextChannel>
@@ -318,13 +315,13 @@ describe("DiscordTransport", () => {
     it("handles messagePromise rejecting by emitting warn", async () => {
       const fakeError = new Error("discord API down")
       const fakeDiscordChannel = {
-        send: jest.fn(async () => {
+        send: vi.fn(async () => {
           return Promise.reject(fakeError)
         }) as unknown,
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const emitSpy = jest.spyOn(transport, "emit")
+      const emitSpy = vi.spyOn(transport, "emit")
 
       transport.log("log me!", undefined)
 
