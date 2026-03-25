@@ -48,6 +48,10 @@ export const handlePrimitive = (info: Primitive): string => {
   }
 }
 
+// Extracted outside to avoid closure recreation on every log invocation
+const capitalize = (str: string): string =>
+  str.charAt(0).toLocaleUpperCase() + str.slice(1)
+
 export const handleLogform = (
   info: TransformableInfo,
   level?: string
@@ -60,9 +64,6 @@ export const handleLogform = (
       : "DEFAULT"
     messageEmbed.setColor(color)
     const fields = sortFields(Object.keys(info))
-
-    const capitalize = (str: string): string =>
-      str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
     // Discord Embed & Message Limits
     // Documented at: https://discord.com/developers/docs/resources/message#embed-object-embed-limits
