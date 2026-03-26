@@ -48,6 +48,24 @@ export const handlePrimitive = (info: Primitive): string => {
   }
 }
 
+const safeToString = (value: any): string => {
+  if (isPrimitive(value)) {
+    return String(value)
+  }
+  if (typeof value?.toString === "function" && value.toString !== Object.toString && value.toString !== Object.prototype.toString) {
+    try {
+      return value.toString()
+    } catch (e) {
+      // ignore
+    }
+  }
+  try {
+    return JSON.stringify(value)
+  } catch (e) {
+    return "[object Object]"
+  }
+}
+
 // Extracted outside to avoid closure recreation on every log invocation
 const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
@@ -80,12 +98,13 @@ export const handleLogform = (
       if (info[field]) {
         const capitalizedField = capitalize(field)
         const value = info[field]
+        const stringifiedValue = safeToString(value)
 
-        logMessageParts.push(`${capitalizedField}: ${value}`)
+        logMessageParts.push(`${capitalizedField}: ${stringifiedValue}`)
 
         if (fieldCount < 25 && totalEmbedLength < 6000) {
           let truncatedName = capitalizedField.substring(0, 256)
-          let truncatedValue = value.toString().substring(0, 1024)
+          let truncatedValue = stringifiedValue.substring(0, 1024)
 
           // Ensure we don't exceed the 6000 character total limit for embeds
           const availableSpace = 6000 - totalEmbedLength
@@ -138,18 +157,8 @@ export const handleObject = (
     }
   } else if (info instanceof Error && info.stack) {
     return info.stack
-  } else if (
-    typeof info?.toString === "function" &&
-    info.toString !== Object.toString
-  ) {
-    return info.toString()
   } else {
-    try {
-      // this will call toJSON on the object, if it exists
-      return JSON.stringify(info)
-    } catch (err) {
-      return "[object Object]"
-    }
+    return safeToString(info)
   }
 }
 

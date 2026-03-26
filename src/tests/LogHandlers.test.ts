@@ -106,6 +106,39 @@ describe("LogHandlers", () => {
       ])
     })
 
+    it("safely handles objects without a valid toString or that throw", () => {
+      const objWithoutToString: any = Object.create(null)
+      objWithoutToString.prop = "value"
+
+      const objThrowingToString = {
+        toString: () => {
+          throw new Error("toString error")
+        },
+      }
+
+      const info: logform.TransformableInfo = {
+        level: "info",
+        message: "hello",
+        obj1: objWithoutToString,
+        obj2: objThrowingToString,
+      }
+
+      const expectedEmbed = new MessageEmbed({
+        color: 3447003,
+        fields: [
+          { name: "Level", value: "info", inline: true },
+          { name: "Message", value: "hello", inline: true },
+          { name: "Obj1", value: `{"prop":"value"}`, inline: true },
+          { name: "Obj2", value: `{}`, inline: true },
+        ],
+      })
+
+      expect(handleLogform(info, "info")).toStrictEqual([
+        `Level: info, Message: hello, Obj1: {"prop":"value"}, Obj2: {}`,
+        expectedEmbed,
+      ])
+    })
+
     it("handles only TransformableInfo with additional data", () => {
       const expectedValue = new MessageEmbed({
         color: 3447003,
@@ -120,7 +153,7 @@ describe("LogHandlers", () => {
             value: "hello world",
             inline: true,
           },
-          { name: "Metadata", value: "[object Object]", inline: true },
+          { name: "Metadata", value: `{"data":""}`, inline: true },
           { name: "Stack", value: "some stack", inline: true },
         ],
       })
@@ -136,7 +169,7 @@ describe("LogHandlers", () => {
           "info"
         )
       ).toStrictEqual([
-        "Level: info, Message: hello world, Metadata: [object Object], Stack: some stack",
+        `Level: info, Message: hello world, Metadata: {"data":""}, Stack: some stack`,
         expectedValue,
       ])
     })
@@ -462,7 +495,7 @@ describe("LogHandlers", () => {
     it("handles object", () => {
       const testObject = { someProperty: "someValue" }
 
-      expect(handleInfo(testObject)).toBe(testObject.toString())
+      expect(handleInfo(testObject)).toBe(JSON.stringify(testObject))
     })
   })
 })
