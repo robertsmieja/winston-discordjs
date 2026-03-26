@@ -15,23 +15,28 @@ const sortFields = (fields: string[]): string[] => {
   let hasTimestamp = false
   let hasLevel = false
   let hasMessage = false
-  const otherFields: string[] = []
 
   for (let i = 0; i < fields.length; i++) {
     const field = fields[i]
     if (field === "timestamp") hasTimestamp = true
     else if (field === "level") hasLevel = true
     else if (field === "message") hasMessage = true
-    else otherFields.push(field)
   }
 
-  const result: string[] = []
-  if (hasTimestamp) result.push("timestamp")
-  if (hasLevel) result.push("level")
-  if (hasMessage) result.push("message")
+  // Pre-allocate the exact size array to avoid dynamic resizing overhead
+  const result = new Array(fields.length)
+  let resultIdx = 0
 
-  for (let i = 0; i < otherFields.length; i++) {
-    result.push(otherFields[i])
+  if (hasTimestamp) result[resultIdx++] = "timestamp"
+  if (hasLevel) result[resultIdx++] = "level"
+  if (hasMessage) result[resultIdx++] = "message"
+
+  let otherIdx = resultIdx
+  for (let i = 0; i < fields.length; i++) {
+    const field = fields[i]
+    if (field !== "timestamp" && field !== "level" && field !== "message") {
+      result[otherIdx++] = field
+    }
   }
 
   return result
