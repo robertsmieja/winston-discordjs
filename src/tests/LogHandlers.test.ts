@@ -106,6 +106,122 @@ describe("LogHandlers", () => {
       ])
     })
 
+    it("handles TransformableInfo with objects having a custom toString()", () => {
+      const expectedValue = new MessageEmbed({
+        color: 3447003,
+        fields: [
+          {
+            name: "Level",
+            value: "info",
+            inline: true,
+          },
+          {
+            name: "Message",
+            value: "hello world",
+            inline: true,
+          },
+          {
+            name: "Custom",
+            value: "custom string",
+            inline: true,
+          },
+        ],
+      })
+
+      expect(
+        handleLogform(
+          {
+            ...transformableInfo,
+            custom: {
+              toString: () => "custom string",
+            },
+          },
+          "info"
+        )
+      ).toStrictEqual([
+        `Level: info, Message: hello world, Custom: custom string`,
+        expectedValue,
+      ])
+    })
+
+    it("handles TransformableInfo with objects lacking toString() like Object.create(null)", () => {
+      const badValue = Object.create(null)
+      badValue.hello = "world"
+
+      const expectedValue = new MessageEmbed({
+        color: 3447003,
+        fields: [
+          {
+            name: "Level",
+            value: "info",
+            inline: true,
+          },
+          {
+            name: "Message",
+            value: "hello world",
+            inline: true,
+          },
+          {
+            name: "BadValue",
+            value: `{"hello":"world"}`,
+            inline: true,
+          },
+        ],
+      })
+
+      expect(
+        handleLogform(
+          {
+            ...transformableInfo,
+            badValue,
+          },
+          "info"
+        )
+      ).toStrictEqual([
+        `Level: info, Message: hello world, BadValue: {"hello":"world"}`,
+        expectedValue,
+      ])
+    })
+
+    it("handles stringification failures gracefully by returning '[object Object]'", () => {
+      const circularValue: any = {}
+      circularValue.self = circularValue
+
+      const expectedValue = new MessageEmbed({
+        color: 3447003,
+        fields: [
+          {
+            name: "Level",
+            value: "info",
+            inline: true,
+          },
+          {
+            name: "Message",
+            value: "hello world",
+            inline: true,
+          },
+          {
+            name: "Circular",
+            value: "[object Object]",
+            inline: true,
+          },
+        ],
+      })
+
+      expect(
+        handleLogform(
+          {
+            ...transformableInfo,
+            circular: circularValue,
+          },
+          "info"
+        )
+      ).toStrictEqual([
+        `Level: info, Message: hello world, Circular: [object Object]`,
+        expectedValue,
+      ])
+    })
+
     it("handles only TransformableInfo with additional data", () => {
       const expectedValue = new MessageEmbed({
         color: 3447003,
@@ -120,7 +236,7 @@ describe("LogHandlers", () => {
             value: "hello world",
             inline: true,
           },
-          { name: "Metadata", value: "[object Object]", inline: true },
+          { name: "Metadata", value: `{"data":""}`, inline: true },
           { name: "Stack", value: "some stack", inline: true },
         ],
       })
@@ -136,7 +252,7 @@ describe("LogHandlers", () => {
           "info"
         )
       ).toStrictEqual([
-        "Level: info, Message: hello world, Metadata: [object Object], Stack: some stack",
+        `Level: info, Message: hello world, Metadata: {"data":""}, Stack: some stack`,
         expectedValue,
       ])
     })
