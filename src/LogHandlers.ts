@@ -12,27 +12,34 @@ export const isTransformableInfo = (
 const sortFields = (fields: string[]): string[] => {
   // This array defines the exact, fixed order in which priority fields
   // ("timestamp", "level", "message") must appear in the final output.
+  const length = fields.length
+  const result = new Array(length)
+  let resultIdx = 0
+
   let hasTimestamp = false
   let hasLevel = false
   let hasMessage = false
-  const otherFields: string[] = []
 
-  for (let i = 0; i < fields.length; i++) {
+  for (let i = 0; i < length; i++) {
     const field = fields[i]
     if (field === "timestamp") hasTimestamp = true
     else if (field === "level") hasLevel = true
     else if (field === "message") hasMessage = true
-    else otherFields.push(field)
   }
 
-  const result: string[] = []
-  if (hasTimestamp) result.push("timestamp")
-  if (hasLevel) result.push("level")
-  if (hasMessage) result.push("message")
+  if (hasTimestamp) result[resultIdx++] = "timestamp"
+  if (hasLevel) result[resultIdx++] = "level"
+  if (hasMessage) result[resultIdx++] = "message"
 
-  for (let i = 0; i < otherFields.length; i++) {
-    result.push(otherFields[i])
+  for (let i = 0; i < length; i++) {
+    const field = fields[i]
+    if (field !== "timestamp" && field !== "level" && field !== "message") {
+      result[resultIdx++] = field
+    }
   }
+
+  // Adjust length in case there were missing priority fields (array length may be smaller)
+  result.length = resultIdx
 
   return result
 }
