@@ -52,6 +52,20 @@ export const handlePrimitive = (info: Primitive): string => {
 const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
+const safeStringify = (value: any): string => {
+  try {
+    if (typeof value === "object" && value !== null) {
+      if (typeof value.toString === "function" && value.toString !== Object.prototype.toString) {
+        return value.toString()
+      }
+      return JSON.stringify(value) || "[object Object]"
+    }
+    return String(value)
+  } catch (err) {
+    return "[object Object]"
+  }
+}
+
 export const handleLogform = (
   info: TransformableInfo,
   level?: string
@@ -80,12 +94,13 @@ export const handleLogform = (
       if (info[field]) {
         const capitalizedField = capitalize(field)
         const value = info[field]
+        const safeValue = safeStringify(value)
 
-        logMessageParts.push(`${capitalizedField}: ${value}`)
+        logMessageParts.push(`${capitalizedField}: ${safeValue}`)
 
         if (fieldCount < 25 && totalEmbedLength < 6000) {
           let truncatedName = capitalizedField.substring(0, 256)
-          let truncatedValue = value.toString().substring(0, 1024)
+          let truncatedValue = safeValue.substring(0, 1024)
 
           // Ensure we don't exceed the 6000 character total limit for embeds
           const availableSpace = 6000 - totalEmbedLength
