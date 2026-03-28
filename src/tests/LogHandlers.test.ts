@@ -236,7 +236,7 @@ describe("LogHandlers", () => {
             value: "hello world",
             inline: true,
           },
-          { name: "Metadata", value: `{"data":""}`, inline: true },
+          { name: "Metadata", value: `[object Object]`, inline: true },
           { name: "Stack", value: "some stack", inline: true },
         ],
       })
@@ -252,7 +252,7 @@ describe("LogHandlers", () => {
           "info"
         )
       ).toStrictEqual([
-        `Level: info, Message: hello world, Metadata: {"data":""}, Stack: some stack`,
+        `Level: info, Message: hello world, Metadata: [object Object], Stack: some stack`,
         expectedValue,
       ])
     })
@@ -390,6 +390,57 @@ describe("LogHandlers", () => {
         "Level: info, Message: hello world",
         expectedTransformableInfoResult,
       ])
+    })
+
+    it("handles TransformableInfo fields containing prototype-less objects safely", () => {
+      const info: logform.TransformableInfo = {
+        level: "info",
+        message: "hello",
+        badObject: Object.create(null),
+      }
+
+      const result = handleLogform(info, "info")
+      expect(result).toBeDefined()
+
+      const resultTuple = result as [string, MessageEmbed]
+      const [messageContent, embed] = resultTuple
+
+      expect(messageContent).toContain("BadObject: {}")
+      expect(embed.fields).toContainEqual({
+        name: "BadObject",
+        value: "{}",
+        inline: true,
+      })
+    })
+
+    it("handles TransformableInfo fields containing objects with throwing stringification safely", () => {
+      const throwingObject = {
+        toString: () => {
+          throw new Error("Boom")
+        },
+        toJSON: () => {
+          throw new Error("Boom")
+        },
+      }
+
+      const info: logform.TransformableInfo = {
+        level: "info",
+        message: "hello",
+        badObject: throwingObject,
+      }
+
+      const result = handleLogform(info, "info")
+      expect(result).toBeDefined()
+
+      const resultTuple = result as [string, MessageEmbed]
+      const [messageContent, embed] = resultTuple
+
+      expect(messageContent).toContain("BadObject: [object Object]")
+      expect(embed.fields).toContainEqual({
+        name: "BadObject",
+        value: "[object Object]",
+        inline: true,
+      })
     })
 
     it("truncates fields and limits to 25 fields for Discord limits", () => {
