@@ -58,6 +58,7 @@ const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
+  if (typeof value === "string") return value
   try {
     return String(value)
   } catch (err) {
@@ -75,12 +76,16 @@ export const handleLogform = (
 ): [string, MessageEmbed] | undefined => {
   if ((level && level === info.level) || !level) {
     const messageEmbed = new MessageEmbed()
-    const logMessageParts: string[] = []
     const color = level
       ? LogLevelToColor[level as LogLevel] ?? "DEFAULT"
       : "DEFAULT"
     messageEmbed.setColor(color)
     const fields = sortFields(Object.keys(info))
+
+    // Pre-allocate the exact size array to avoid dynamic resizing overhead
+    // and closure recreations.
+    const logMessageParts = new Array(fields.length)
+    let logMessagePartsIdx = 0
 
     // Discord Embed & Message Limits
     // Documented at: https://discord.com/developers/docs/resources/message#embed-object-embed-limits
@@ -99,7 +104,7 @@ export const handleLogform = (
         const value = info[field]
         const stringifiedValue = safeStringify(value)
 
-        logMessageParts.push(`${capitalizedField}: ${stringifiedValue}`)
+        logMessageParts[logMessagePartsIdx++] = `${capitalizedField}: ${stringifiedValue}`
 
         if (fieldCount < 25 && totalEmbedLength < 6000) {
           let truncatedName = capitalizedField.substring(0, 256)
@@ -129,6 +134,7 @@ export const handleLogform = (
       }
     }
 
+    logMessageParts.length = logMessagePartsIdx
     const fullMessage = logMessageParts.join(", ")
     const truncatedMessage = fullMessage.substring(0, 2000)
 
