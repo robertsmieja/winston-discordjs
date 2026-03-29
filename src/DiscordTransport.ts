@@ -61,7 +61,10 @@ export class DiscordTransport extends TransportStream {
             embeds: [embed],
           })
         } else {
-          messagePromise = this.discordChannel.send(logMessage)
+          // 🛡️ Sentinel: Enforce Discord API size limits on text content
+          // Documented at: https://discord.com/developers/docs/resources/message#create-message
+          const content = typeof logMessage === "string" ? logMessage.substring(0, 2000) : logMessage
+          messagePromise = this.discordChannel.send(content)
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
