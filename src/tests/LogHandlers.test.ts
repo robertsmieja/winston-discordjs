@@ -96,6 +96,12 @@ describe("LogHandlers", () => {
     it("handles number", () => {
       expect(handlePrimitive(42)).toBe("42")
     })
+
+    it("truncates large strings to 2000 characters", () => {
+      const longString = "A".repeat(3000)
+      const result = handlePrimitive(longString)
+      expect(result.length).toBe(2000)
+    })
   })
 
   describe("handleLogform()", () => {
@@ -499,6 +505,29 @@ describe("LogHandlers", () => {
       testObject.myself = testObject
       expect(handleObject(testObject)).toBe("[object Object]")
     })
+
+    it("truncates Errors with stack to 2000 characters", () => {
+      const errorWithStack = new Error("error message")
+      errorWithStack.stack = "A".repeat(3000)
+      const result = handleObject(errorWithStack) as string
+      expect(result.length).toBe(2000)
+    })
+
+    it("truncates objects with a toString() function to 2000 characters", () => {
+      const result = handleObject({
+        toString: function () {
+          return "A".repeat(3000)
+        },
+      }) as string
+      expect(result.length).toBe(2000)
+    })
+
+    it("truncates objects stringified with JSON to 2000 characters", () => {
+      const result = handleObject({
+        a: "A".repeat(3000),
+      }) as string
+      expect(result.length).toBe(2000)
+    })
   })
 
   describe("handleInfo()", () => {
@@ -513,7 +542,7 @@ describe("LogHandlers", () => {
     it("handles object", () => {
       const testObject = { someProperty: "someValue" }
 
-      expect(handleInfo(testObject)).toBe(testObject.toString())
+      expect(handleInfo(testObject)).toBe(JSON.stringify(testObject))
     })
   })
 })
