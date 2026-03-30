@@ -5,3 +5,7 @@
 ## 2024-05-24 - Array push overhead in hot loop
 **Learning:** `sortFields` creates multiple arrays and uses `Array.prototype.push` in a loop inside `handleLogform`. `push` operations and dynamic array resizing are much slower than pre-allocating an array with exact size and direct index assignment, especially for objects with many properties. `sortFields` was taking >550ms for 100k operations while pre-allocation with array indices drops it to ~440ms.
 **Action:** When extracting and sorting fields from a logging object, use `new Array(fields.length)` to pre-allocate memory and use direct index assignments to avoid `Array.prototype.push` overhead.
+
+## 2024-05-25 - Avoid unnecessary error creation in try/catch fallback blocks
+**Learning:** `safeStringify` used a broad try-catch over `String()` which, if failing, would create `Error` objects and cause stack trace collection overhead. Also, most primitives stringify safely. An early return for string primitives and prioritizing `JSON.stringify` for objects significantly improves performance (approx 2x faster).
+**Action:** When falling back to stringification, implement an early return `if (typeof value === 'string') return value;` before the try-catch blocks to bypass conversion overhead entirely for string primitives.
