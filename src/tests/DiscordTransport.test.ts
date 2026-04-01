@@ -138,6 +138,24 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
+    it("truncates log messages without embeds to 2000 characters", () => {
+      const fakeDiscordChannel = {
+        send: vi.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      const longString = "A".repeat(3000)
+      transport.log(longString, undefined)
+
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
+        Discord.TextChannel["send"]
+      >
+
+      expect(mockSend).toHaveBeenCalledWith("A".repeat(2000))
+    })
+
     it("handles log messages with embeds correctly", () => {
       const fakeDiscordChannel = {
         send: vi.fn(async () => {
