@@ -61,7 +61,10 @@ export class DiscordTransport extends TransportStream {
             embeds: [embed],
           })
         } else {
-          messagePromise = this.discordChannel.send(logMessage)
+          // Enforce Discord API limits universally at transport boundary
+          // https://discord.com/developers/docs/resources/message
+          const safeMessage = String(logMessage).substring(0, 2000)
+          messagePromise = this.discordChannel.send(safeMessage)
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
