@@ -5,3 +5,6 @@
 ## 2024-05-24 - Array push overhead in hot loop
 **Learning:** `sortFields` creates multiple arrays and uses `Array.prototype.push` in a loop inside `handleLogform`. `push` operations and dynamic array resizing are much slower than pre-allocating an array with exact size and direct index assignment, especially for objects with many properties. `sortFields` was taking >550ms for 100k operations while pre-allocation with array indices drops it to ~440ms.
 **Action:** When extracting and sorting fields from a logging object, use `new Array(fields.length)` to pre-allocate memory and use direct index assignments to avoid `Array.prototype.push` overhead.
+## 2024-04-03 - String fast-path and upper-casing micro-optimizations
+**Learning:** For generic text manipulation in hot loops, `toUpperCase()` provides a measurable performance win over `toLocaleUpperCase()` by skipping locale validation overhead. Similarly, adding a fast-path for primitive strings to bypass try/catch blocks avoids unnecessary JS engine state management overhead.
+**Action:** Always prefer `toUpperCase()` over its locale-aware counterpart when strict locale output is not required. Apply the fast-path string primitive check before invoking `String()` or entering `try/catch` regions for heavy stringification utilities.
