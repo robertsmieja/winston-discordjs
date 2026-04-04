@@ -158,9 +158,17 @@ export const handleObject = (
     return info.stack
   } else if (
     typeof info?.toString === "function" &&
-    info.toString !== Object.toString
+    info.toString !== Object.prototype.toString
   ) {
-    return info.toString()
+    try {
+      return info.toString()
+    } catch (err) {
+      try {
+        return JSON.stringify(info)
+      } catch (err2) {
+        return "[object Object]"
+      }
+    }
   } else {
     try {
       // this will call toJSON on the object, if it exists

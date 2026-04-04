@@ -494,6 +494,37 @@ describe("LogHandlers", () => {
       expect(handleObject(testObject)).toBe(JSON.stringify(testObject))
     })
 
+    it("handles objects with a toString property that throws", () => {
+      const testObject = {
+        toString: () => {
+          throw new Error("Throw in toString")
+        },
+      }
+      expect(handleObject(testObject)).toBe(JSON.stringify(testObject))
+    })
+
+    it("handles objects with a toString property that throws and a toJSON property that throws", () => {
+      const testObject = {
+        toString: () => {
+          throw new Error("Throw in toString")
+        },
+        toJSON: () => {
+          throw new Error("Throw in toJSON")
+        },
+      }
+      expect(handleObject(testObject)).toBe("[object Object]")
+    })
+
+    it("handles objects with a toString property that throws and a circular reference", () => {
+      const testObject: any = {
+        toString: () => {
+          throw new Error("Throw in toString")
+        },
+      }
+      testObject.testObject = testObject
+      expect(handleObject(testObject)).toBe("[object Object]")
+    })
+
     it("handles circular objects without throwing", () => {
       const testObject: any = Object.create(null)
       testObject.myself = testObject
@@ -513,7 +544,7 @@ describe("LogHandlers", () => {
     it("handles object", () => {
       const testObject = { someProperty: "someValue" }
 
-      expect(handleInfo(testObject)).toBe(testObject.toString())
+      expect(handleInfo(testObject)).toBe(JSON.stringify(testObject))
     })
   })
 })
