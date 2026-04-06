@@ -513,7 +513,7 @@ describe("LogHandlers", () => {
     it("handles object", () => {
       const testObject = { someProperty: "someValue" }
 
-      expect(handleInfo(testObject)).toBe(testObject.toString())
+      expect(handleInfo(testObject)).toBe(JSON.stringify(testObject))
     })
   })
 })
