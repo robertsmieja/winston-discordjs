@@ -47,12 +47,24 @@ describe("LogHandlers", () => {
       expect(isTransformableInfo(0)).toBe(false)
     })
 
+    it("handles non-zero numbers", () => {
+      expect(isTransformableInfo(123)).toBe(false)
+    })
+
     it("handles false", () => {
       expect(isTransformableInfo(false)).toBe(false)
     })
 
+    it("handles true", () => {
+      expect(isTransformableInfo(true)).toBe(false)
+    })
+
     it(`handles ""`, () => {
       expect(isTransformableInfo("")).toBe(false)
+    })
+
+    it(`handles non-empty strings`, () => {
+      expect(isTransformableInfo("hello")).toBe(false)
     })
 
     it("handles an empty object", () => {
