@@ -6,7 +6,12 @@ import { LogLevel, LogLevelToColor } from "./LogLevels"
 export const isTransformableInfo = (
   info: unknown
 ): info is TransformableInfo => {
-  return Boolean(info && "level" in (info as any) && "message" in (info as any))
+  return Boolean(
+    typeof info === "object" &&
+      info !== null &&
+      "level" in info &&
+      "message" in info
+  )
 }
 
 const sortFields = (fields: string[]): string[] => {
@@ -158,9 +163,13 @@ export const handleObject = (
     return info.stack
   } else if (
     typeof info?.toString === "function" &&
-    info.toString !== Object.toString
+    info.toString !== Object.prototype.toString
   ) {
-    return info.toString()
+    try {
+      return info.toString()
+    } catch (err) {
+      return "[object Object]"
+    }
   } else {
     try {
       // this will call toJSON on the object, if it exists
