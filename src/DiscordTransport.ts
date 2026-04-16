@@ -33,7 +33,10 @@ export class DiscordTransport extends TransportStream {
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
-          this.discordClient.login(discordToken)
+          // SEC-FIX: Prevent unhandled promise rejections from crashing the process
+          this.discordClient.login(discordToken).catch((error) => {
+            this.emit("warn", error)
+          })
         }
       }
 
