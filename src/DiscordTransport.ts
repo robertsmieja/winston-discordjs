@@ -59,9 +59,15 @@ export class DiscordTransport extends TransportStream {
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
+            // Prevent arbitrary pings via log injection
+            allowedMentions: { parse: [] },
           })
         } else {
-          messagePromise = this.discordChannel.send(logMessage)
+          messagePromise = this.discordChannel.send({
+            content: logMessage,
+            // Prevent arbitrary pings via log injection
+            allowedMentions: { parse: [] },
+          })
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
