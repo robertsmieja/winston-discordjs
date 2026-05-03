@@ -5,3 +5,11 @@
 ## 2024-05-24 - Array push overhead in hot loop
 **Learning:** `sortFields` creates multiple arrays and uses `Array.prototype.push` in a loop inside `handleLogform`. `push` operations and dynamic array resizing are much slower than pre-allocating an array with exact size and direct index assignment, especially for objects with many properties. `sortFields` was taking >550ms for 100k operations while pre-allocation with array indices drops it to ~440ms.
 **Action:** When extracting and sorting fields from a logging object, use `new Array(fields.length)` to pre-allocate memory and use direct index assignments to avoid `Array.prototype.push` overhead.
+
+## 2024-05-24 - toLocaleUpperCase vs toUpperCase
+**Learning:** `toLocaleUpperCase` has significant overhead (~15x slower in microbenchmarks) compared to `toUpperCase` due to locale-aware processing. In formatting helpers like `capitalize` used in hot logging paths, this overhead compounds rapidly.
+**Action:** Prefer `toUpperCase` over `toLocaleUpperCase` for simple string formatting in hot paths where locale-awareness is not strictly required.
+
+## 2024-05-24 - Bypassing try-catch for primitive serialization
+**Learning:** In serialization hot paths like `safeStringify`, relying on `try-catch` to handle simple string primitives adds unnecessary overhead. An early return for string primitives (`if (typeof value === 'string') return value`) is over 2x faster than running it through a `try-catch` and `String()`.
+**Action:** When creating safe serialization functions, add an early return for string primitives before entering the `try-catch` block to improve performance.
