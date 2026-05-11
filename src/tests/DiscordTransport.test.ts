@@ -34,10 +34,14 @@ describe("DiscordTransport", () => {
       const fakeChannelManager = {} as Partial<Discord.ChannelManager>
 
       const fakeDiscordClient = {
-        login: vi.fn(),
+        login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
+
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        return fakeDiscordClient as any
+      } as any)
 
       const transport = new DiscordTransport(options)
 
@@ -67,7 +71,7 @@ describe("DiscordTransport", () => {
 
       // Recreate how discordClient is handled in the previous test
       const fakeDiscordClient = {
-        login: vi.fn(),
+        login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
       } as Partial<Discord.Client>
 
@@ -135,7 +139,10 @@ describe("DiscordTransport", () => {
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toHaveBeenCalledWith("log me!")
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "log me!",
+        allowedMentions: { parse: [] },
+      })
     })
 
     it("handles log messages with embeds correctly", () => {
@@ -155,6 +162,7 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith({
         content: "Level: info, Message: log me!",
         embeds: [expect.any(Discord.MessageEmbed)],
+        allowedMentions: { parse: [] },
       })
     })
 
@@ -176,7 +184,10 @@ describe("DiscordTransport", () => {
         transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
         transport.on("warn", (error) => {
           expect(error).toStrictEqual(fakeError)
-          expect(mockSend).toHaveBeenCalledWith("log me!")
+          expect(mockSend).toHaveBeenCalledWith({
+            content: "log me!",
+            allowedMentions: { parse: [] },
+          })
           resolve()
         })
         transport.log("log me!", undefined)
@@ -202,7 +213,10 @@ describe("DiscordTransport", () => {
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.log("log me!", callback)
 
-      expect(mockSend).toHaveBeenCalledWith("log me!")
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "log me!",
+        allowedMentions: { parse: [] },
+      })
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
@@ -223,7 +237,10 @@ describe("DiscordTransport", () => {
         transport.log("log me!", {} as any)
       }).not.toThrow()
 
-      expect(mockSend).toHaveBeenCalledWith("log me!")
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "log me!",
+        allowedMentions: { parse: [] },
+      })
     })
 
     describe("close()", () => {
