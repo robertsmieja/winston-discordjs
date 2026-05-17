@@ -23,19 +23,17 @@ const sortFields = (fields: string[]): string[] => {
     else if (field === "message") hasMessage = true
   }
 
-  // Pre-allocate the exact size array to avoid dynamic resizing overhead
-  const result = new Array(fields.length)
-  let resultIdx = 0
+  // Use dynamic array and push, which V8 optimizes well and avoids "holey" arrays
+  const result: string[] = []
 
-  if (hasTimestamp) result[resultIdx++] = "timestamp"
-  if (hasLevel) result[resultIdx++] = "level"
-  if (hasMessage) result[resultIdx++] = "message"
+  if (hasTimestamp) result.push("timestamp")
+  if (hasLevel) result.push("level")
+  if (hasMessage) result.push("message")
 
-  let otherIdx = resultIdx
   for (let i = 0; i < fields.length; i++) {
     const field = fields[i]
     if (field !== "timestamp" && field !== "level" && field !== "message") {
-      result[otherIdx++] = field
+      result.push(field)
     }
   }
 
@@ -55,9 +53,10 @@ export const handlePrimitive = (info: Primitive): string => {
 
 // Extracted outside to avoid closure recreation on every log invocation
 const capitalize = (str: string): string =>
-  str.charAt(0).toLocaleUpperCase() + str.slice(1)
+  str.charAt(0).toUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
+  if (typeof value === "string") return value
   try {
     return String(value)
   } catch (err) {
