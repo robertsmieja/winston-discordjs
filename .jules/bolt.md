@@ -5,3 +5,7 @@
 ## 2024-05-24 - Array push overhead in hot loop
 **Learning:** `sortFields` creates multiple arrays and uses `Array.prototype.push` in a loop inside `handleLogform`. `push` operations and dynamic array resizing are much slower than pre-allocating an array with exact size and direct index assignment, especially for objects with many properties. `sortFields` was taking >550ms for 100k operations while pre-allocation with array indices drops it to ~440ms.
 **Action:** When extracting and sorting fields from a logging object, use `new Array(fields.length)` to pre-allocate memory and use direct index assignments to avoid `Array.prototype.push` overhead.
+
+## 2024-05-14 - Optimize string operations in log paths
+**Learning:** `toLocaleUpperCase()` has significant performance overhead (~4x to 15x slower) compared to `toUpperCase()` in Node.js/V8 due to locale-awareness. In addition, when executing `safeStringify` or similar serialization methods in hot paths, casting string primitives directly using `String()` introduces measurable overhead compared to an early return.
+**Action:** Use `toUpperCase()` instead of `toLocaleUpperCase()` for string formatting in hot paths like logging unless locale-specific conversions are explicitly required. Add an early return for string primitives `if (typeof value === 'string') return value;` before executing `String()` or `JSON.stringify()` in `try-catch` blocks to bypass unnecessary conversion overhead.
