@@ -4,7 +4,17 @@ import DiscordTransport, {
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
 
-vi.mock("discord.js")
+vi.mock("discord.js", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    Client: vi.fn().mockImplementation(function () {
+      this.login = vi.fn(() => Promise.resolve())
+      this.on = vi.fn()
+      this.destroy = vi.fn()
+    }),
+  }
+})
 
 describe("DiscordTransport", () => {
   describe("constructor", () => {
@@ -34,7 +44,7 @@ describe("DiscordTransport", () => {
       const fakeChannelManager = {} as Partial<Discord.ChannelManager>
 
       const fakeDiscordClient = {
-        login: vi.fn(),
+        login: vi.fn(() => Promise.resolve()),
         on: vi.fn(),
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
@@ -67,7 +77,7 @@ describe("DiscordTransport", () => {
 
       // Recreate how discordClient is handled in the previous test
       const fakeDiscordClient = {
-        login: vi.fn(),
+        login: vi.fn(() => Promise.resolve()),
         on: vi.fn(),
       } as Partial<Discord.Client>
 
