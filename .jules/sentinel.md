@@ -7,3 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
+
+## 2025-05-25 - Log Injection via Unrestricted Discord Mentions
+**Vulnerability:** Simple string logs were sent directly to the Discord API without setting the `allowedMentions` option. If a user was able to inject strings like `@everyone`, `@here`, or specific role/user IDs into the log data, the Discord bot would actually ping those users/roles when outputting the log message, causing a form of notification spam/abuse.
+**Learning:** External integrations that provide markdown/ping features (like Discord or Slack) must always explicitly disable those features for log transport payloads, as log data is effectively untrusted user input.
+**Prevention:** All messages sent via the Discord transport must explicitly set `allowedMentions: { parse: [] }` in the message options to prevent unrestricted mentions.
