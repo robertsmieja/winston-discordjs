@@ -5,3 +5,7 @@
 ## 2024-05-24 - Array push overhead in hot loop
 **Learning:** `sortFields` creates multiple arrays and uses `Array.prototype.push` in a loop inside `handleLogform`. `push` operations and dynamic array resizing are much slower than pre-allocating an array with exact size and direct index assignment, especially for objects with many properties. `sortFields` was taking >550ms for 100k operations while pre-allocation with array indices drops it to ~440ms.
 **Action:** When extracting and sorting fields from a logging object, use `new Array(fields.length)` to pre-allocate memory and use direct index assignments to avoid `Array.prototype.push` overhead.
+
+## 2024-05-24 - Optimize string operations in hot log formatting path
+**Learning:** In V8, `toLocaleUpperCase()` has a significant performance overhead (~8x slower) compared to standard `toUpperCase()` due to locale-awareness. In string formatting hot paths, this overhead adds up. Furthermore, wrapping simple primitives like strings in a `try...catch` block and executing `String(value)` takes ~7.5x longer than a simple `typeof value === 'string'` check.
+**Action:** Always prefer `toUpperCase()` over `toLocaleUpperCase()` unless locale-specific formatting is strictly required. For safe serialization wrappers (like `safeStringify`), always add early returns for primitives (especially strings) before resorting to `try...catch` and `String()` conversions to avoid unnecessary overhead in hot paths.
