@@ -7,3 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
+
+## 2025-02-12 - Denial of Service and Log Injection via Unhandled Rejections and Mentions
+**Vulnerability:** The transport allowed potential log injection attacks because log messages sent to Discord could arbitrarily trigger `@everyone` or `@here` mentions if the log message contained these strings. In addition, the asynchronous `discordClient.login()` did not have a `.catch()` block, allowing an unhandled promise rejection to potentially crash the Node.js process (DoS) if authentication failed.
+**Learning:** External integrations like Discord must be explicitly configured to ignore user/role mentions via `allowedMentions: { parse: [] }` in the payload, and all promises from async external operations must be explicitly caught to avoid bringing down the entire host application.
+**Prevention:** Always set strict parse restrictions on mentions when sending payloads containing user-controlled logging inputs, and strictly append `.catch()` blocks to Promises from APIs that might fail.
