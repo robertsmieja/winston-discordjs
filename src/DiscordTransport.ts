@@ -53,15 +53,21 @@ export class DiscordTransport extends TransportStream {
 
       if (this.discordChannel && logMessage) {
         let messagePromise: Promise<Message>
+        // Security: Explicitly disable mention parsing to prevent log injection
+        // where arbitrary user input could trigger @everyone or user pings.
         if (Array.isArray(logMessage)) {
           const content = logMessage[0]
           const embed = logMessage[1]
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
+            allowedMentions: { parse: [] },
           })
         } else {
-          messagePromise = this.discordChannel.send(logMessage)
+          messagePromise = this.discordChannel.send({
+            content: logMessage as string,
+            allowedMentions: { parse: [] },
+          })
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
