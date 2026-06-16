@@ -7,3 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
+
+## 2025-02-12 - Denial of Logging via TypeErrors in Type Guards
+**Vulnerability:** The logging path contained a type guard `isTransformableInfo` that used the `in` operator on `info` cast to `any` (`"level" in (info as any)`) without explicitly checking if the parameter was an object or not null. This caused a runtime TypeError to crash the process when primitives (like strings or booleans) were passed.
+**Learning:** Type guards processing unknown or any variables, particularly in critical paths like logging, must be fully defensive and validate the type of the argument first (e.g., `typeof info === 'object' && info !== null`) before accessing its properties or using operators like `in`.
+**Prevention:** Always ensure type guards in logging pipelines defensively check input types to prevent Denial of Service via unhandled runtime exceptions.

@@ -6,7 +6,12 @@ import { LogLevel, LogLevelToColor } from "./LogLevels"
 export const isTransformableInfo = (
   info: unknown
 ): info is TransformableInfo => {
-  return Boolean(info && "level" in (info as any) && "message" in (info as any))
+  return Boolean(
+    typeof info === "object" &&
+      info !== null &&
+      "level" in info &&
+      "message" in info
+  )
 }
 
 const sortFields = (fields: string[]): string[] => {
