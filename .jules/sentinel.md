@@ -7,3 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
+
+## 2025-02-13 - Security Improvement: Prevention of unintended pings/mentions in Discord
+**Vulnerability:** Discord allows pinging/mentioning users using formatted text like `<@userid>`. If these are included inside logged objects, attackers could trigger unintended pings, leading to spam.
+**Learning:** Always restrict user-provided input from turning into actionable actions outside the application.
+**Prevention:** Explicitly restrict parsing of mentions when making external service requests that support such functionality unless explicitly desired. In this project, that's done by adding `allowedMentions: { parse: [] }` in the Discord payload.
