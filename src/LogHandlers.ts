@@ -54,8 +54,10 @@ export const handlePrimitive = (info: Primitive): string => {
 }
 
 // Extracted outside to avoid closure recreation on every log invocation
+// Use toUpperCase() instead of toLocaleUpperCase() to avoid the significant overhead
+// (~15x slower in microbenchmarks) of locale-aware operations in this hot path
 const capitalize = (str: string): string =>
-  str.charAt(0).toLocaleUpperCase() + str.slice(1)
+  str.charAt(0).toUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
   try {
