@@ -33,8 +33,13 @@ describe("DiscordTransport", () => {
 
       const fakeChannelManager = {} as Partial<Discord.ChannelManager>
 
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        this.login = fakeDiscordClient.login
+        this.on = fakeDiscordClient.on
+        return this
+      } as any)
       const fakeDiscordClient = {
-        login: vi.fn(),
+        login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
@@ -47,9 +52,7 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      const mockedLogin = discordClient.login as MockedFunction<
-        (typeof Discord.Client)["prototype"]["login"]
-      >
+      const mockedLogin = discordClient.login as MockedFunction<any>
       const mockedOn = discordClient.on as MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
@@ -67,7 +70,7 @@ describe("DiscordTransport", () => {
 
       // Recreate how discordClient is handled in the previous test
       const fakeDiscordClient = {
-        login: vi.fn(),
+        login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
       } as Partial<Discord.Client>
 
