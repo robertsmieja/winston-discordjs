@@ -7,3 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
+
+## 2025-02-13 - Denial of Service via Unhandled Promise Rejections
+**Vulnerability:** Asynchronous external calls like `discordClient.login()` were missing `.catch()` handlers. If the connection fails, the resulting unhandled promise rejection causes modern Node.js processes to crash entirely.
+**Learning:** Logging frameworks must fail safely and not bring down the host application. Unhandled asynchronous errors constitute a Denial of Service (DoS) vulnerability.
+**Prevention:** Always append `.catch()` blocks to asynchronous external operations to gracefully log or swallow failures without terminating the process.
