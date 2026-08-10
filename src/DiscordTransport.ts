@@ -59,9 +59,13 @@ export class DiscordTransport extends TransportStream {
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
+            allowedMentions: { parse: [] }, // Security: Prevent log injection and unrestricted mentions
           })
         } else {
-          messagePromise = this.discordChannel.send(logMessage)
+          messagePromise = this.discordChannel.send({
+            content: logMessage,
+            allowedMentions: { parse: [] }, // Security: Prevent log injection and unrestricted mentions
+          })
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
