@@ -7,3 +7,7 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
+## 2024-05-24 - Log Injection leading to Unrestricted Mentions
+**Vulnerability:** Discord's API parses mentions (e.g. `@everyone`) by default. The transport sent raw log messages directly, meaning an attacker who controls log input could inject mentions and mass-ping Discord users, potentially causing a Denial of Service via notification spam.
+**Learning:** Any content sent to communication platforms (like Discord or Slack) must explicitly disable automatic mention parsing unless specifically required by the application logic.
+**Prevention:** Always set `allowedMentions: { parse: [] }` in the payload when sending automated messages to external platforms to prevent mention abuse via log injection.
