@@ -100,6 +100,28 @@ describe("DiscordTransport", () => {
       }
       expect(emitSpy).toHaveBeenCalledWith("warn", fakeError)
     })
+
+    it("emits warn event when discordClient.login fails", async () => {
+      const options: DiscordTransportStreamOptions = {
+        discordToken: "EXAMPLE_API_TOKEN",
+      }
+
+      const fakeError = new Error("login error")
+      const fakeDiscordClient = {
+        login: vi.fn(() => Promise.reject(fakeError)),
+        on: vi.fn(),
+      } as Partial<Discord.Client>
+
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        return fakeDiscordClient as any
+      } as any)
+
+      const transport = new DiscordTransport(options)
+      const emitSpy = vi.spyOn(transport, "emit")
+
+      await Promise.resolve()
+      expect(emitSpy).toHaveBeenCalledWith("warn", fakeError)
+    })
   })
 
   describe("log()", () => {

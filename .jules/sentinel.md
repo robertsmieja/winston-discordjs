@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2024-05-18 - Unhandled Promise Rejections in External Transports
-**Vulnerability:** Asynchronous external connection methods, like `discordClient.login()`, were invoked without a `.catch()` block. If the API token is invalid or the connection fails, it causes an Unhandled Promise Rejection which crashes modern Node.js processes, creating a Denial of Service (DoS) vulnerability.
-**Learning:** Logging frameworks must fail safely. Unhandled exceptions or promise rejections within a transport should emit a warning or error to the parent logger, but must never forcefully exit the host application process.
-**Prevention:** Always append a `.catch()` block to asynchronous initialization, connection, and transmission methods in external transports to catch and route errors to the logger's error emission path instead of throwing globally.
+## 2024-05-19 - Denial of Service via Unhandled Promise Rejection in Discord Client Login
+**Vulnerability:** Calling asynchronous initialization methods (like `discordClient.login()`) without a `.catch()` block can lead to unhandled promise rejections. In modern Node.js environments, unhandled promise rejections will crash the entire Node.js process, creating a severe Denial of Service (DoS) vulnerability.
+**Learning:** Logging integrations must fail safely. An inability to authenticate with a logging sink (e.g., Discord) should never bring down the main host application that is utilizing the logger.
+**Prevention:** Always append `.catch()` blocks to asynchronous external API calls or client initializations. Ensure errors are gracefully handled, for example by emitting a "warn" event locally rather than crashing.
