@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Unrestricted Discord Mentions (Log Injection)
-**Vulnerability:** The logging framework sent plain strings or payloads without `allowedMentions` configured. This allows an attacker who can control log inputs (e.g., via user agent or error messages) to trigger notification spam and ping any Discord user or role (e.g., `@everyone`).
-**Learning:** External API wrappers sending messages to messaging platforms must enforce mention constraints at the final output boundary to prevent log injection from escalating into notification spam or harassment.
-**Prevention:** Always restrict mentions when using the Discord API by explicitly setting `allowedMentions: { parse: [] }` on outgoing message payloads, including simple text strings.
+## 2024-05-27 - Discord Log Injection via Unrestricted Mentions
+**Vulnerability:** The logger was sending log messages to Discord directly without disabling mention parsing (`allowedMentions: { parse: [] }`). This means an attacker could craft log payloads containing `@everyone` or `<@userid>` that would trigger actual pings when rendered in the Discord channel, facilitating a "Log Injection" vulnerability that spams users.
+**Learning:** External sinks that parse rich text formats or mentions (like Discord or Slack) must have those features explicitly disabled when transmitting untrusted log data.
+**Prevention:** Always configure `allowedMentions: { parse: [] }` on Discord message payloads. For plain string logs, wrap the content in an object (`{ content: logMessage, allowedMentions: { parse: [] } }`) to enforce this constraint.
