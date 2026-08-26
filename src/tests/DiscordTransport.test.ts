@@ -172,6 +172,7 @@ describe("DiscordTransport", () => {
       >
 
       expect(mockSend).toHaveBeenCalledWith({
+        allowedMentions: { parse: [] },
         content: "Level: info, Message: log me!",
         embeds: [expect.any(Discord.MessageEmbed)],
         allowedMentions: { parse: [] },
