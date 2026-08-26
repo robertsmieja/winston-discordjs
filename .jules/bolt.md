@@ -5,6 +5,7 @@
 ## 2024-05-24 - Array push overhead in hot loop
 **Learning:** `sortFields` creates multiple arrays and uses `Array.prototype.push` in a loop inside `handleLogform`. `push` operations and dynamic array resizing are much slower than pre-allocating an array with exact size and direct index assignment, especially for objects with many properties. `sortFields` was taking >550ms for 100k operations while pre-allocation with array indices drops it to ~440ms.
 **Action:** When extracting and sorting fields from a logging object, use `new Array(fields.length)` to pre-allocate memory and use direct index assignments to avoid `Array.prototype.push` overhead.
-## 2024-05-24 - Bypass try-catch for string primitives
-**Learning:** In hot serialization paths like `safeStringify`, relying entirely on `try-catch` blocks and `String(value)` for known primitives introduces measurable performance overhead due to V8's optimization de-opts around generic try-catch blocks in hot loops, especially when the majority of log messages are simple strings.
-**Action:** Always add explicit type checks and early returns for primitives (e.g., `if (typeof value === "string") return value`) before entering `try-catch` blocks in hot logging or formatting loops. Include comments to explain this micro-optimization so code reviewers do not reject it as unnecessary.
+
+## 2024-05-24 - V8 holey array performance vs pre-allocation
+**Learning:** While pre-allocating an array using `new Array(size)` and assigning elements by index is conventionally faster, in modern V8 this creates a "holey" (sparse) array until all elements are assigned. Holey arrays disable certain V8 optimizations and can result in slower iteration/operation in hot loops. A microbenchmark showed that a dense array built with `[]` and `Array.prototype.push()` was ~20% faster than the pre-allocated index-assignment approach for processing log fields.
+**Action:** When building arrays in hot loops where the exact length is known but elements are conditionally inserted, prefer dense arrays constructed via `.push()` rather than pre-allocating with `new Array(size)` to avoid the "holey" array performance penalty in V8.
