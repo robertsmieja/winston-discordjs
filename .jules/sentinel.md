@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Unrestricted Mentions via Log Injection
-**Vulnerability:** Discord integration allowed log payloads to trigger `@here`, `@everyone`, or user/role mentions if those text strings appeared in the log content. An attacker could exploit this by injecting mention strings into application inputs that are subsequently logged, leading to notification spam and "Ping Abuse."
-**Learning:** Sending unsanitized log content directly to chat platforms like Discord can lead to unintended side-effects beyond just displaying text, specifically unwanted notifications.
-**Prevention:** Always restrict parsing of mentions in chat platform integrations. For Discord, explicitly set `allowedMentions: { parse: [] }` in the message payload to ensure all content is treated as raw text and prevents triggering actual mentions.
+## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
+**Vulnerability:** Log messages were sent to Discord without explicitly disabling mention parsing (`allowedMentions: { parse: [] }`). An attacker could inject payloads like `@everyone` or `<@userid>` into user-controlled data that is subsequently logged, resulting in unauthorized notifications or ping spam.
+**Learning:** Any text sent to a platform that supports automatic mention parsing (like Discord or Slack) must have mention capabilities explicitly disabled if the text contains untrusted or dynamically generated data.
+**Prevention:** Always include `allowedMentions: { parse: [] }` in the message payload when sending logs to Discord using `discord.js`.
