@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2026-05-21 - Denial of Service via Unhandled Promise Rejection
-**Vulnerability:** Asynchronous external operations, like `discordClient.login()`, were not catching rejected promises. In modern Node.js environments, unhandled promise rejections cause the process to crash (Denial of Service).
-**Learning:** Logging frameworks must fail safely. Unhandled exceptions in logging layers can crash the host application.
-**Prevention:** Always attach a `.catch()` handler to asynchronous methods in transport or logging setups, such as `this.discordClient.login().catch(err => this.emit("warn", err))`, to ensure network or external service failures don't bring down the main process.
+## 2025-02-12 - Log Injection / Unauthorized Mentions
+**Vulnerability:** Discord logging integration did not restrict Discord API from parsing mentions (e.g. `@everyone`, `@here`, `@user_id`) in log messages. This allowed attackers to craft malicious input that, when logged, would trigger unauthorized pings and notifications to users in the Discord server, functioning as a log injection vector.
+**Learning:** External notification or chat integrations (like Discord, Slack) must always explicitly disable unescaped user mentions in their message payload configurations unless intentionally designed to ping users.
+**Prevention:** Always set explicit `allowedMentions: { parse: [] }` (or the equivalent payload setting for the specific API) in the transport boundaries to disable automatic parsing of mentions in strings being logged.
