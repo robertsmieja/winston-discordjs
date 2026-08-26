@@ -42,6 +42,10 @@ describe("DiscordTransport", () => {
       } as any)
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
 
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        return fakeDiscordClient as any
+      } as any)
+
       const transport = new DiscordTransport(options)
 
       expect(transport).toBeDefined()
