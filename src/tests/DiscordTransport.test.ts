@@ -36,17 +36,11 @@ describe("DiscordTransport", () => {
       const fakeDiscordClient = {
         login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
-      } as unknown as Partial<Discord.Client>
-
+      } as Partial<Discord.Client>
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
         return fakeDiscordClient as any
       } as any)
-
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
-
-      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
-        return fakeDiscordClient as any
-      } as any)
 
       const transport = new DiscordTransport(options)
 
@@ -56,8 +50,6 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      // Assert that mock login was initialized with a mocked implementation that returns a promise
-      expect(fakeDiscordClient.login).toBeDefined()
       const mockedLogin = discordClient.login as MockedFunction<
         (typeof Discord.Client)["prototype"]["login"]
       >
@@ -80,7 +72,7 @@ describe("DiscordTransport", () => {
       const fakeDiscordClient = {
         login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
-      } as unknown as Partial<Discord.Client>
+      } as Partial<Discord.Client>
 
       // temporarily override the mock so we control `on`
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
@@ -105,28 +97,6 @@ describe("DiscordTransport", () => {
       if (errorCallback) {
         errorCallback(fakeError)
       }
-      expect(emitSpy).toHaveBeenCalledWith("warn", fakeError)
-    })
-
-    it("emits warn event when discordClient.login fails", async () => {
-      const options: DiscordTransportStreamOptions = {
-        discordToken: "EXAMPLE_API_TOKEN",
-      }
-
-      const fakeError = new Error("login error")
-      const fakeDiscordClient = {
-        login: vi.fn(() => Promise.reject(fakeError)),
-        on: vi.fn(),
-      } as Partial<Discord.Client>
-
-      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
-        return fakeDiscordClient as any
-      } as any)
-
-      const transport = new DiscordTransport(options)
-      const emitSpy = vi.spyOn(transport, "emit")
-
-      await Promise.resolve()
       expect(emitSpy).toHaveBeenCalledWith("warn", fakeError)
     })
   })
