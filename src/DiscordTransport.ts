@@ -58,6 +58,7 @@ export class DiscordTransport extends TransportStream {
           const content = logMessage[0]
           const embed = logMessage[1]
           messagePromise = this.discordChannel.send({
+            allowedMentions: { parse: [] },
             content,
             embeds: [embed],
             allowedMentions: { parse: [] },
