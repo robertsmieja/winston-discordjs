@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-14 - Log Injection via Unrestricted Discord Mentions
-**Vulnerability:** Simple string logs were sent directly to the Discord API without disabling mentions. Malicious input inside log messages (like `@everyone` or `<@userid>`) would be actively parsed and pinged by Discord, leading to notification spam and potential social engineering.
-**Learning:** External transports like Discord actively parse payload text for mentions by default. Sending unstructured string logs directly opens a vector for "Log Injection", where users can weaponize the logging system's output to mass-ping roles or users.
-**Prevention:** All messages sent via the Discord transport must explicitly set `allowedMentions: { parse: [] }` in the payload options. Refactor simple string content into an object payload `{ content: logMessage, allowedMentions: { parse: [] } }` to enforce this restriction safely across all logging paths.
+## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
+**Vulnerability:** The Discord transport previously sent simple string logs directly to Discord or as a payload without `allowedMentions` configured. This could allow an attacker to inject special strings like `@everyone` or `@here` into logs (e.g. through a maliciously crafted username or error message), causing unauthorized mentions that disrupt operations or social engineer Discord users.
+**Learning:** Sending arbitrary text to chat APIs (like Discord or Slack) requires explicit configurations to disable the parsing of mentions (like tags or `@everyone`) to avoid "Log Injection" vulnerabilities.
+**Prevention:** Always encapsulate chat payloads inside objects and enforce strict mention parsing boundaries (e.g., `allowedMentions: { parse: [] }`) at the lowest transport level before sending the payload.
