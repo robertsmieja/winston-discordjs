@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Mention Injection in Logging Transport
-**Vulnerability:** The logger was sending raw log contents to Discord. If an attacker controls the log input (e.g. error messages or web request payload), they can inject tags like `@everyone` or `<@user_id>` causing the logging bot to maliciously ping users.
-**Learning:** External sinks (like Discord or Slack) that parse mentions from messages must have those capabilities explicitly disabled when acting as log aggregators to prevent noise and abuse.
-**Prevention:** Always use `allowedMentions: { parse: [] }` or its equivalent to strip formatting/mentions when sending automated logging messages to a chat API.
+## 2024-05-20 - Log Injection via Unrestricted Discord Mentions
+**Vulnerability:** The Discord transport sent log messages directly as strings without setting `allowedMentions`. This allowed any log message containing `@everyone`, `@here`, or role pings to actually trigger notifications in the Discord server, enabling log injection attacks where an attacker could spam server members simply by causing logs with mention tags.
+**Learning:** External communication APIs (like Discord, Slack) often parse raw text for mentions or commands. All programmatic messages sent to these platforms, especially system logs that may include unverified string data, must explicitly disable mention parsing at the transport boundary to prevent abuse.
+**Prevention:** Always explicitly set restrictions like `allowedMentions: { parse: [] }` in the API payload to sanitize outgoing log messages and prevent accidental or malicious mention triggering.
