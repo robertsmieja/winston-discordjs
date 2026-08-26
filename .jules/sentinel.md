@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Denial of Logging via TypeErrors in Type Guards
-**Vulnerability:** The logging path contained a type guard `isTransformableInfo` that used the `in` operator on `info` cast to `any` (`"level" in (info as any)`) without explicitly checking if the parameter was an object or not null. This caused a runtime TypeError to crash the process when primitives (like strings or booleans) were passed.
-**Learning:** Type guards processing unknown or any variables, particularly in critical paths like logging, must be fully defensive and validate the type of the argument first (e.g., `typeof info === 'object' && info !== null`) before accessing its properties or using operators like `in`.
-**Prevention:** Always ensure type guards in logging pipelines defensively check input types to prevent Denial of Service via unhandled runtime exceptions.
+## 2025-02-12 - Denial of Service (DoS) via Unhandled Promise Rejections
+**Vulnerability:** Asynchronous external operations (like `discordClient.login()`) were executed without a `.catch()` block. If the operation fails, it throws an unhandled promise rejection, which causes modern Node.js processes to crash, resulting in a Denial of Service (DoS) vulnerability in the logging transport.
+**Learning:** Logging frameworks must be resilient and fail safely. They should never crash the host application. Always handle asynchronous errors.
+**Prevention:** Always append `.catch()` blocks to asynchronous external operations to handle rejections gracefully and emit them as warnings instead of crashing the process.

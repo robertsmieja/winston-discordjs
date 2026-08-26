@@ -49,6 +49,12 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
 
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        this.login = fakeDiscordClient.login
+        this.on = fakeDiscordClient.on
+        return this
+      } as any)
+
       const transport = new DiscordTransport(options)
 
       expect(transport).toBeDefined()
@@ -81,7 +87,9 @@ describe("DiscordTransport", () => {
 
       // temporarily override the mock so we control `on`
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
-        return fakeDiscordClient as any
+        this.login = fakeDiscordClient.login
+        this.on = fakeDiscordClient.on
+        return this
       } as any)
 
       const transport = new DiscordTransport(options)
