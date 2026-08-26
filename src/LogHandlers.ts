@@ -9,8 +9,8 @@ export const isTransformableInfo = (
   return Boolean(
     typeof info === "object" &&
       info !== null &&
-      "level" in info &&
-      "message" in info
+      "level" in (info as any) &&
+      "message" in (info as any)
   )
 }
 
@@ -63,8 +63,6 @@ const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
-  // Optimization: bypass try-catch block and String() conversion overhead for primitive strings
-  if (typeof value === "string") return value
   try {
     return String(value)
   } catch (err) {
@@ -165,13 +163,9 @@ export const handleObject = (
     return info.stack
   } else if (
     typeof info?.toString === "function" &&
-    info.toString !== Object.prototype.toString
+    info.toString !== Object.toString
   ) {
-    try {
-      return info.toString()
-    } catch (err) {
-      return "[object Object]"
-    }
+    return info.toString()
   } else {
     try {
       // this will call toJSON on the object, if it exists
