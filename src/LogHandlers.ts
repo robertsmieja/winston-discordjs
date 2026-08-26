@@ -9,8 +9,8 @@ export const isTransformableInfo = (
   return Boolean(
     typeof info === "object" &&
       info !== null &&
-      "level" in (info as any) &&
-      "message" in (info as any)
+      "level" in info &&
+      "message" in info
   )
 }
 
