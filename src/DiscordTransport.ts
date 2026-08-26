@@ -59,11 +59,13 @@ export class DiscordTransport extends TransportStream {
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
+            // Sentinel: Prevent accidental mentions from log injection
             allowedMentions: { parse: [] },
           })
         } else {
           messagePromise = this.discordChannel.send({
             content: logMessage,
+            // Sentinel: Prevent accidental mentions from log injection
             allowedMentions: { parse: [] },
           })
         }
