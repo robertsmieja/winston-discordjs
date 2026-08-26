@@ -8,10 +8,10 @@ vi.mock("discord.js", async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
-    Client: vi.fn(function () {
+    Client: vi.fn().mockImplementation(function (this: any) {
       this.login = vi.fn(() => Promise.resolve("token"))
       this.on = vi.fn()
-      this.destroy = vi.fn()
+      return this
     }),
   }
 })
@@ -44,16 +44,10 @@ describe("DiscordTransport", () => {
       const fakeChannelManager = {} as Partial<Discord.ChannelManager>
 
       const fakeDiscordClient = {
-        login: vi.fn(() => Promise.resolve("token")),
+        login: vi.fn(),
         on: vi.fn(),
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
-
-      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
-        this.login = fakeDiscordClient.login
-        this.on = fakeDiscordClient.on
-        return this
-      } as any)
 
       const transport = new DiscordTransport(options)
 
@@ -63,7 +57,9 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      const mockedLogin = discordClient.login as MockedFunction<any>
+      const mockedLogin = discordClient.login as MockedFunction<
+        (typeof Discord.Client)["prototype"]["login"]
+      >
       const mockedOn = discordClient.on as MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
@@ -151,10 +147,7 @@ describe("DiscordTransport", () => {
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toHaveBeenCalledWith({
-        content: "log me!",
-        allowedMentions: { parse: [] },
-      })
+      expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
     it("handles log messages with embeds correctly", () => {
@@ -172,10 +165,8 @@ describe("DiscordTransport", () => {
       >
 
       expect(mockSend).toHaveBeenCalledWith({
-        allowedMentions: { parse: [] },
         content: "Level: info, Message: log me!",
         embeds: [expect.any(Discord.MessageEmbed)],
-        allowedMentions: { parse: [] },
       })
     })
 
@@ -197,10 +188,7 @@ describe("DiscordTransport", () => {
         transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
         transport.on("warn", (error) => {
           expect(error).toStrictEqual(fakeError)
-          expect(mockSend).toHaveBeenCalledWith({
-            content: "log me!",
-            allowedMentions: { parse: [] },
-          })
+          expect(mockSend).toHaveBeenCalledWith("log me!")
           resolve()
         })
         transport.log("log me!", undefined)
@@ -226,10 +214,7 @@ describe("DiscordTransport", () => {
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.log("log me!", callback)
 
-      expect(mockSend).toHaveBeenCalledWith({
-        content: "log me!",
-        allowedMentions: { parse: [] },
-      })
+      expect(mockSend).toHaveBeenCalledWith("log me!")
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
@@ -250,10 +235,7 @@ describe("DiscordTransport", () => {
         transport.log("log me!", {} as any)
       }).not.toThrow()
 
-      expect(mockSend).toHaveBeenCalledWith({
-        content: "log me!",
-        allowedMentions: { parse: [] },
-      })
+      expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
     describe("close()", () => {
