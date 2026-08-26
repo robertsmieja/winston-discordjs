@@ -53,6 +53,7 @@ export class DiscordTransport extends TransportStream {
 
       if (this.discordChannel && logMessage) {
         let messagePromise: Promise<Message>
+        // Security: Prevent log injection mentions
         if (Array.isArray(logMessage)) {
           const content = logMessage[0]
           const embed = logMessage[1]
