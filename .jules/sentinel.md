@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-13 - Denial of Service via Unhandled Promise Rejections
-**Vulnerability:** Asynchronous external calls like `discordClient.login()` were missing `.catch()` handlers. If the connection fails, the resulting unhandled promise rejection causes modern Node.js processes to crash entirely.
-**Learning:** Logging frameworks must fail safely and not bring down the host application. Unhandled asynchronous errors constitute a Denial of Service (DoS) vulnerability.
-**Prevention:** Always append `.catch()` blocks to asynchronous external operations to gracefully log or swallow failures without terminating the process.
+## 2025-02-12 - Log Injection & Unrestricted Mentions via Discord API
+**Vulnerability:** Sending string-based logs directly to a Discord webhook or channel without disabling mentions allowed malicious log payloads to ping users/roles (e.g., `@everyone`).
+**Learning:** Always use `allowedMentions: { parse: [] }` in the Discord message options when sending logs to prevent log injection from turning into annoying or abusive pings.
+**Prevention:** Apply `allowedMentions` systematically to all outgoing logging messages.
