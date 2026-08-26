@@ -61,10 +61,10 @@ export class DiscordTransport extends TransportStream {
             embeds: [embed],
           })
         } else {
-          // Discord Message Content Limit: 2000 characters
-          // https://discord.com/developers/docs/resources/message#create-message
-          const content = String(logMessage).substring(0, 2000)
-          messagePromise = this.discordChannel.send(content)
+          // Enforce Discord API limits universally at transport boundary
+          // https://discord.com/developers/docs/resources/message
+          const safeMessage = String(logMessage).substring(0, 2000)
+          messagePromise = this.discordChannel.send(safeMessage)
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
