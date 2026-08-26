@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
-**Vulnerability:** Log messages were sent to Discord without explicitly disabling mention parsing (`allowedMentions: { parse: [] }`). An attacker could inject payloads like `@everyone` or `<@userid>` into user-controlled data that is subsequently logged, resulting in unauthorized notifications or ping spam.
-**Learning:** Any text sent to a platform that supports automatic mention parsing (like Discord or Slack) must have mention capabilities explicitly disabled if the text contains untrusted or dynamically generated data.
-**Prevention:** Always include `allowedMentions: { parse: [] }` in the message payload when sending logs to Discord using `discord.js`.
+## 2024-05-24 - [Log Injection Mention Vulnerability]
+**Vulnerability:** A log injection vulnerability in the Discord transport module allowed maliciously crafted log messages to trigger unrestricted global mentions (e.g., `@everyone` or `@here`) in Discord channels.
+**Learning:** The default behavior of the discord.js `send()` method processes all standard mentions if no explicit restrictions are defined. Without formatting protections on log contents, the logging library inadvertently became an attack vector for Denial of Service and harassment through spam mentions.
+**Prevention:** Always encapsulate plain text log strings into the payload object format (`{ content: logMessage }`) and explicitly restrict parsing capabilities by enforcing `allowedMentions: { parse: [] }` on every outgoing message across all execution paths.
