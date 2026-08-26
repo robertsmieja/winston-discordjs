@@ -63,6 +63,8 @@ const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
+  // Optimization: bypass try-catch block and String() conversion overhead for primitive strings
+  if (typeof value === "string") return value
   try {
     return String(value)
   } catch (err) {
