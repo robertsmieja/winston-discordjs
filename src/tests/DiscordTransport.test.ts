@@ -142,7 +142,10 @@ describe("DiscordTransport", () => {
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toHaveBeenCalledWith("log me!")
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "log me!",
+        allowedMentions: { parse: [] },
+      })
     })
 
     it("handles log messages with embeds correctly", () => {
@@ -162,6 +165,7 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith({
         content: "Level: info, Message: log me!",
         embeds: [expect.any(Discord.MessageEmbed)],
+        allowedMentions: { parse: [] },
       })
     })
 
@@ -183,7 +187,10 @@ describe("DiscordTransport", () => {
         transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
         transport.on("warn", (error) => {
           expect(error).toStrictEqual(fakeError)
-          expect(mockSend).toHaveBeenCalledWith("log me!")
+          expect(mockSend).toHaveBeenCalledWith({
+            content: "log me!",
+            allowedMentions: { parse: [] },
+          })
           resolve()
         })
         transport.log("log me!", undefined)
@@ -209,7 +216,10 @@ describe("DiscordTransport", () => {
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.log("log me!", callback)
 
-      expect(mockSend).toHaveBeenCalledWith("log me!")
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "log me!",
+        allowedMentions: { parse: [] },
+      })
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
@@ -230,7 +240,10 @@ describe("DiscordTransport", () => {
         transport.log("log me!", {} as any)
       }).not.toThrow()
 
-      expect(mockSend).toHaveBeenCalledWith("log me!")
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "log me!",
+        allowedMentions: { parse: [] },
+      })
     })
 
     describe("close()", () => {
