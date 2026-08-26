@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Log Injection / Unauthorized Mentions
-**Vulnerability:** Discord logging integration did not restrict Discord API from parsing mentions (e.g. `@everyone`, `@here`, `@user_id`) in log messages. This allowed attackers to craft malicious input that, when logged, would trigger unauthorized pings and notifications to users in the Discord server, functioning as a log injection vector.
-**Learning:** External notification or chat integrations (like Discord, Slack) must always explicitly disable unescaped user mentions in their message payload configurations unless intentionally designed to ping users.
-**Prevention:** Always set explicit `allowedMentions: { parse: [] }` (or the equivalent payload setting for the specific API) in the transport boundaries to disable automatic parsing of mentions in strings being logged.
+## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
+**Vulnerability:** Log messages were sent to Discord channels without restricting mentions. A maliciously constructed log message containing strings like "@everyone", "@here", or user/role IDs could unintendedly trigger notifications/mentions inside the Discord server where logs are routed. This creates a noisy abuse vector or potential social engineering risk.
+**Learning:** External integrations that parse rich text formats or specific mention syntaxes (like Discord's `<@user>` or `@everyone`) must strictly sanitize or disable those features at the transport layer to prevent "log injection" attacks.
+**Prevention:** Always set explicit mention restriction parameters (e.g., `allowedMentions: { parse: [] }`) on Discord message payloads.
