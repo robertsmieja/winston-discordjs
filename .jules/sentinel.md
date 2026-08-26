@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Unrestricted Discord Mentions via Log Injection
-**Vulnerability:** Log messages sent to Discord via `discordChannel.send()` were not sanitizing user-provided content. This allowed an attacker to perform unrestricted Discord mentions (e.g., `@everyone`, `@here`) if their input was included in the log message, causing a Denial of Service or unintended spam in the Discord channel.
-**Learning:** External APIs like Discord.js will parse message content for mentions by default. When forwarding logs to such APIs, explicit restrictions must be applied to the message payloads to prevent malicious input from abusing mention functionality.
-**Prevention:** Always set `allowedMentions: { parse: [] }` in the message options for all log messages and payloads containing embeds to restrict parsing of mentions, ensuring unintended mentions cannot be triggered by user-controlled log data.
+## 2025-02-12 - Log Injection via Unrestricted Mentions
+**Vulnerability:** Discord API parses text for mentions by default. Because the Winston transport did not restrict mention parsing in its `send` options, maliciously crafted logs containing strings like `@everyone`, `@here`, or `<@!userID>` would trigger actual push notifications/mentions in Discord, leading to severe annoyance or denial-of-service via notification spam.
+**Learning:** Any text being sent to a chat platform (like Discord) from an untrusted source (e.g. log files or user input recorded in logs) must explicitly disable mention parsing at the transport layer to prevent unintentional pings.
+**Prevention:** Always set `allowedMentions: { parse: [] }` when sending Discord messages that originate from or contain arbitrary log data.
