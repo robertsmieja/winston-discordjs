@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-04-27 - [Log Injection & Unrestricted Mentions in Discord Transports]
-**Vulnerability:** The application was passing plain string messages to `this.discordChannel.send()` inside the logging transport module. This allowed any un-sanitized log input (e.g. usernames or debug values containing `@everyone` or `@here`) to silently "ping" and notify all users in the attached Discord channel.
-**Learning:** In logging integrations like Discord transports, we often forget that the output destination renders and executes markdown or special mention tags natively. What is simply text in a standard file logger becomes an executable command in chat APIs.
-**Prevention:** Always enforce strict boundaries at the transport layer for chat APIs. For `discord.js`, universally pass `{ content: logMessage, allowedMentions: { parse: [] } }` to completely disable server-wide, role, or user pings for all log output unless specifically and deliberately authorized.
+## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
+**Vulnerability:** Log messages constructed from external inputs were sent to Discord without restricting mention parsing (`@everyone`, `@here`, `@user`, etc.). This allowed attackers to inject mentions into log data, causing the Discord client to notify users or groups unintentionally (Log Injection / Mention Abuse).
+**Learning:** External transports like Discord that parse special syntax (like mentions) by default will execute that syntax even if it originates from log payloads.
+**Prevention:** Always explicitly disable mention parsing by setting `allowedMentions: { parse: [] }` on messages sent to Discord. Simple strings must be refactored to object payloads `{ content: '...', allowedMentions: { parse: [] } }` to enforce this.
