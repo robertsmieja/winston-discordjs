@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-13 - Log Injection via Discord Mentions
-**Vulnerability:** Discord allows pinging/mentioning users and roles like @everyone, @here, or specific user/role IDs if they are present in a message's content. The logging transport didn't restrict `allowedMentions`, which meant that any user-controlled input (e.g., a username or message) included in logs could trigger unintended notifications or annoyances in the logging channel.
-**Learning:** Sending unsanitized log content to chat platforms that parse mentions can lead to abuse, alert fatigue, or social engineering attacks if an attacker injects mentions in logged inputs.
-**Prevention:** Always disable parsing of mentions (e.g. `allowedMentions: { parse: [] }` in Discord) for automated notifications and logs to prevent input-driven pings.
+## 2025-02-12 - Mention Injection via Unrestricted Log Payloads
+**Vulnerability:** Messages sent via the Discord transport layer used simple strings or omitted mention configurations, which allows user-controlled inputs embedded in logs to arbitrarily mention Discord users, roles, or "@everyone", enabling log injection spam attacks.
+**Learning:** External integrations like Discord will parse mention tags by default in any text content they receive. Logging systems must be strictly designed not to trigger mentions unless explicitly intended, to prevent "Mention Injection".
+**Prevention:** Always encapsulate messages sent to Discord inside a payload object and explicitly set `allowedMentions: { parse: [] }` to forcefully disable mention parsing across all content.
