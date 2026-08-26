@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-13 - Security Improvement: Prevention of unintended pings/mentions in Discord
-**Vulnerability:** Discord allows pinging/mentioning users using formatted text like `<@userid>`. If these are included inside logged objects, attackers could trigger unintended pings, leading to spam.
-**Learning:** Always restrict user-provided input from turning into actionable actions outside the application.
-**Prevention:** Explicitly restrict parsing of mentions when making external service requests that support such functionality unless explicitly desired. In this project, that's done by adding `allowedMentions: { parse: [] }` in the Discord payload.
+## 2025-02-13 - Unrestricted Discord Mentions in Log Payloads
+**Vulnerability:** Discord transport sent log messages without disabling mentions. If an attacker controlled logged content (like username or input), they could inject `@everyone` or `@here` and mass-ping the server.
+**Learning:** External integrations like Discord that support notification pings must explicitly disable mentions by default to prevent attackers from weaponizing logs to ping administrators or entire communities.
+**Prevention:** Always set `allowedMentions: { parse: [] }` for all payloads sent via the Discord API to prevent unintended mentions.
