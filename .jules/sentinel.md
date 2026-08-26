@@ -7,8 +7,7 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
-
 ## 2025-02-12 - Log Injection via Discord Mentions
-**Vulnerability:** The transport previously sent raw string content directly to Discord. Because Discord natively parses text mentions like `@everyone` or `<@userid>`, an attacker who could control logged content (like usernames or input strings) could create "Log Injection" attacks. The logs would trigger real notifications and ping arbitrary roles or users, which is a major security and annoyance risk.
-**Learning:** Whenever you forward text to a system that supports parseable mentions or macros (like Discord or Slack), you must explicitly disable the parsing of those features to ensure the message is treated strictly as plain text.
-**Prevention:** Always use `allowedMentions: { parse: [] }` (or the equivalent payload) when sending data from untrusted contexts to Discord APIs.
+**Vulnerability:** Unrestricted Discord mentions allowed log injection. The Winston transport failed to set `allowedMentions` in message payloads, meaning maliciously crafted log payloads with `@everyone` or `@here` could generate pings to all server members when sent by the bot.
+**Learning:** External integrations that use markup or ping systems need defensive measures against arbitrary string injection. In Discord's case, all bot messages should explicitely define who they are allowed to ping.
+**Prevention:** Always set `allowedMentions: { parse: [] }` in message configurations sent to the Discord API to prevent logs from generating undesired mentions.
