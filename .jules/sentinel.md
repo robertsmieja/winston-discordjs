@@ -7,7 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
-## 2025-02-14 - Denial of Logging via Unbounded Primitives
-**Vulnerability:** Discord Transport was directly sending logging primitives to `discordChannel.send` without enforcing the Discord API message limit (2000 characters). This caused unbounded primitives to crash the logging process via unhandled Promise rejections from the Discord API.
-**Learning:** Security limits must be enforced at the outermost transport boundary, uniformly catching all payload types—not just complex objects formatted via LogHandlers.
-**Prevention:** Always enforce external API constraints locally before dispatch, ensuring both object and primitive paths are bounded.
+
+## 2025-02-12 - Denial of Logging via Unhandled Promise Rejection
+**Vulnerability:** Calling `this.discordClient.login(discordToken)` without a `.catch()` block causes an unhandled promise rejection if the token is invalid (e.g. `Error [TOKEN_INVALID]`). In modern Node.js versions, unhandled promise rejections cause the process to crash, which is a Denial of Service (DoS) risk.
+**Learning:** External API initialization or authentication calls that return Promises must always have their rejections handled gracefully (e.g., by logging a warning or emitting an event) to avoid process termination.
+**Prevention:** Always append `.catch()` blocks to asynchronous external operations, especially during transport initialization.
