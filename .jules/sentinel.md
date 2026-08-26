@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
-**Vulnerability:** The logging transport sent messages to Discord without restricting parsed mentions (`allowedMentions: { parse: [] }`), allowing malicious actors to inject `@everyone`, `@here`, or role pings into log fields.
-**Learning:** External integrations that parse text for mentions (like Discord or Slack) must always have those features explicitly disabled when transmitting untrusted log data, otherwise they become a vector for denial-of-attention or social engineering attacks.
-**Prevention:** Always explicitly set strict `allowedMentions` policies on outgoing message payloads containing log data.
+## 2024-06-27 - Log Injection via Unrestricted Mentions
+**Vulnerability:** Discord allows pinging roles (e.g., @everyone) or users. When logs containing user-provided input are sent directly to Discord channels via the transport layer, attackers could perform a log injection attack by inserting mention payloads into their input. The logging framework would dutifully output these mentions, inadvertently pinging large groups of people.
+**Learning:** External services like Discord treat text messages differently than traditional log files by parsing and executing rich features (like mentions). All raw log output sent to such services must explicitly disable these parsing features at the transport boundary to prevent unintentional pings.
+**Prevention:** Universally enforce `allowedMentions: { parse: [] }` in all `discordChannel.send()` payloads, refactoring simple string inputs into explicit message objects.
