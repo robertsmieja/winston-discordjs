@@ -39,6 +39,7 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
 
+      // vi.mock replaces the prototype. Explicitly injecting it:
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
         return fakeDiscordClient as any
       } as any)
@@ -51,7 +52,7 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      const mockedLogin = discordClient.login as MockedFunction<
+      const mockedLogin = fakeDiscordClient.login as MockedFunction<
         (typeof Discord.Client)["prototype"]["login"]
       >
       const mockedOn = discordClient.on as MockedFunction<
