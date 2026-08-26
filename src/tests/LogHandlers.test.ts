@@ -480,6 +480,12 @@ describe("LogHandlers", () => {
       expect(handleObject(errorWithStack)).toBe(errorWithStack.stack)
     })
 
+    it("handles Errors where stack is not a string", () => {
+      const errorWithStack = new Error("error message")
+      ;(errorWithStack as any).stack = 123
+      expect(handleObject(errorWithStack)).toBe("123")
+    })
+
     it("handles objects with a toString() function", () => {
       expect(
         handleObject({
@@ -488,6 +494,15 @@ describe("LogHandlers", () => {
           },
         })
       ).toBe("Hello World!")
+    })
+
+    it("handles objects where toString() does not return a string", () => {
+      const result = handleObject({
+        toString: function () {
+          return 123
+        },
+      })
+      expect(result).toBe("123")
     })
 
     it("handles objects with a toJSON() function", () => {
@@ -499,6 +514,13 @@ describe("LogHandlers", () => {
           },
         })
       ).toBe(`{"hello":"world"}`)
+    })
+
+    it("handles objects where JSON.stringify() returns undefined", () => {
+      const result = handleObject(function () {
+        return
+      })
+      expect(result).toBeUndefined()
     })
 
     it("handles objects with a toString() and a toJSON() function", () => {
