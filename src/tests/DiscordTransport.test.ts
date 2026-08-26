@@ -41,6 +41,9 @@ describe("DiscordTransport", () => {
         return fakeDiscordClient as any
       } as any)
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        return fakeDiscordClient as any
+      } as any)
 
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
         return fakeDiscordClient as any
@@ -54,9 +57,7 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      const mockedLogin = discordClient.login as MockedFunction<
-        (typeof Discord.Client)["prototype"]["login"]
-      >
+      const mockedLogin = discordClient.login as MockedFunction<any>
       const mockedOn = discordClient.on as MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
