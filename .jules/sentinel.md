@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Denial of Logging via Unhandled Promise Rejections in Login
-**Vulnerability:** The `discordClient.login(discordToken)` method returns a promise that was not handled with a `.catch()` block. If an invalid token or network error occurred, it would cause an unhandled promise rejection, which crashes modern Node.js processes, creating a Denial of Logging/DoS vulnerability.
-**Learning:** All asynchronous operations (especially external API calls like Discord login) in a logging transport must have proper error handling to fail safely and emit warnings instead of bringing down the entire application.
-**Prevention:** Always append `.catch()` blocks to asynchronous external operations and redirect errors to the logger's error/warn event emitters.
+## 2025-02-12 - Denial of Logging via Primitive `in` Operator
+**Vulnerability:** The `isTransformableInfo` type guard used the `in` operator to check for properties (e.g., `"level" in info`) without explicitly verifying that the `info` object was actually an object. Passing primitives like a `string`, `number`, or `boolean` caused the `in` operator to throw a runtime `TypeError`, crashing the Node.js process.
+**Learning:** Type guards that accept `unknown` or `any` input cannot blindly use the `in` operator. Because unhandled exceptions in asynchronous logging paths can crash the application, an attacker could supply a primitive string that leads to a "Denial of Logging" DoS scenario.
+**Prevention:** Always verify that a variable is a non-null object (`typeof info === 'object' && info !== null`) before using the `in` operator in type guards or validation logic.
