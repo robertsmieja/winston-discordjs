@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2024-05-19 - Denial of Service via Unhandled Promise Rejection in Discord Client Login
-**Vulnerability:** Calling asynchronous initialization methods (like `discordClient.login()`) without a `.catch()` block can lead to unhandled promise rejections. In modern Node.js environments, unhandled promise rejections will crash the entire Node.js process, creating a severe Denial of Service (DoS) vulnerability.
-**Learning:** Logging integrations must fail safely. An inability to authenticate with a logging sink (e.g., Discord) should never bring down the main host application that is utilizing the logger.
-**Prevention:** Always append `.catch()` blocks to asynchronous external API calls or client initializations. Ensure errors are gracefully handled, for example by emitting a "warn" event locally rather than crashing.
+## 2025-02-12 - Denial of Service via Unhandled Promise Rejection in Discord Client Login
+**Vulnerability:** The `DiscordTransport` initialized the `discord.js` client using `this.discordClient.login(discordToken)` without appending a `.catch()` block. If an invalid token or network error caused the promise to reject, it triggered an unhandled promise rejection, which crashes Node.js processes.
+**Learning:** Asynchronous initialization of external dependencies that return promises (like API clients or network connections) must always handle rejections gracefully, even if they aren't awaited, to prevent bringing down the entire host application.
+**Prevention:** Always append a `.catch()` block to "fire-and-forget" promises like `login()` calls, ensuring errors are routed to the logging framework's `emit("warn", error)` handlers safely.

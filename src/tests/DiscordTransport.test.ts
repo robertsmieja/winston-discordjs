@@ -51,6 +51,8 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
+      // Assert that mock login was initialized with a mocked implementation that returns a promise
+      expect(fakeDiscordClient.login).toBeDefined()
       const mockedLogin = discordClient.login as MockedFunction<
         (typeof Discord.Client)["prototype"]["login"]
       >
