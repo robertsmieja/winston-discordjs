@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2024-05-20 - Log Injection via Unrestricted Discord Mentions
-**Vulnerability:** The Discord transport sent log messages directly as strings without setting `allowedMentions`. This allowed any log message containing `@everyone`, `@here`, or role pings to actually trigger notifications in the Discord server, enabling log injection attacks where an attacker could spam server members simply by causing logs with mention tags.
-**Learning:** External communication APIs (like Discord, Slack) often parse raw text for mentions or commands. All programmatic messages sent to these platforms, especially system logs that may include unverified string data, must explicitly disable mention parsing at the transport boundary to prevent abuse.
-**Prevention:** Always explicitly set restrictions like `allowedMentions: { parse: [] }` in the API payload to sanitize outgoing log messages and prevent accidental or malicious mention triggering.
+## 2024-07-05 - Unrestricted Discord Mentions (Log Injection)
+**Vulnerability:** Sending string-based logs directly to the Discord API allows for attackers to inject user mentions, `@everyone`, or `@here` into logs, which would alert users unexpectedly.
+**Learning:** External communication APIs like Discord parse mentions from textual input by default. Logging frameworks should never allow log input to interact with external alerting features such as user mentions unless explicitly desired.
+**Prevention:** Always restrict mentions when submitting payload data to Discord by enforcing `allowedMentions: { parse: [] }` universally at the transport boundary to eliminate "Log Injection" vulnerabilities.
