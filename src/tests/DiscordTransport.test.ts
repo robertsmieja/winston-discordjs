@@ -36,7 +36,12 @@ describe("DiscordTransport", () => {
       const fakeDiscordClient = {
         login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
-      } as Partial<Discord.Client>
+      } as unknown as Partial<Discord.Client>
+
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        return fakeDiscordClient as any
+      } as any)
+
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
 
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
@@ -75,7 +80,7 @@ describe("DiscordTransport", () => {
       const fakeDiscordClient = {
         login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
-      } as Partial<Discord.Client>
+      } as unknown as Partial<Discord.Client>
 
       // temporarily override the mock so we control `on`
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
