@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-14 - Denial of Logging via Unhandled Promise Rejection on Login
-**Vulnerability:** The application calls `this.discordClient.login(discordToken)` without appending a `.catch()` block. If the token is invalid or a network error occurs during initialization, an unhandled promise rejection is thrown. In modern Node.js environments, unhandled promise rejections cause the process to crash, leading to a Denial of Service (DoS) and Denial of Logging.
-**Learning:** External asynchronous API operations, especially those initializing connections or clients (like `discordClient.login()`), must have their promise chains properly handled. Logging libraries must fail safely and not bring down the host application.
-**Prevention:** Always append a `.catch()` block to asynchronous client operations to catch initialization errors. Ensure that these errors are gracefully handled or emitted via standard event emitters (e.g., `this.emit("warn", error)`).
+## 2025-02-12 - Denial of Service via Unhandled External Promises
+**Vulnerability:** External API initialization methods (such as `discordClient.login()`) return Promises. Calling these asynchronously without appending a `.catch()` block leaves the Node.js process vulnerable to unhandled Promise rejections. If the network request fails or the token is invalid, the unhandled rejection will crash modern Node.js processes entirely.
+**Learning:** Logging frameworks and external connections must fail safely and independently. If a logging transport crashes the host application because of a network error, it turns a minor logging failure into a critical DoS event.
+**Prevention:** Always append `.catch()` blocks to asynchronous external operations in logging paths. Emit the error safely through an internal event emitter (like `this.emit('warn', error)`) instead of letting it bubble up to crash the process.
