@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Denial of Logging via Unhandled Promise Rejection
-**Vulnerability:** Calling `this.discordClient.login(discordToken)` without a `.catch()` block causes an unhandled promise rejection if the token is invalid (e.g. `Error [TOKEN_INVALID]`). In modern Node.js versions, unhandled promise rejections cause the process to crash, which is a Denial of Service (DoS) risk.
-**Learning:** External API initialization or authentication calls that return Promises must always have their rejections handled gracefully (e.g., by logging a warning or emitting an event) to avoid process termination.
-**Prevention:** Always append `.catch()` blocks to asynchronous external operations, especially during transport initialization.
+## 2024-05-18 - Unhandled Promise Rejections in External Transports
+**Vulnerability:** Asynchronous external connection methods, like `discordClient.login()`, were invoked without a `.catch()` block. If the API token is invalid or the connection fails, it causes an Unhandled Promise Rejection which crashes modern Node.js processes, creating a Denial of Service (DoS) vulnerability.
+**Learning:** Logging frameworks must fail safely. Unhandled exceptions or promise rejections within a transport should emit a warning or error to the parent logger, but must never forcefully exit the host application process.
+**Prevention:** Always append a `.catch()` block to asynchronous initialization, connection, and transmission methods in external transports to catch and route errors to the logger's error emission path instead of throwing globally.

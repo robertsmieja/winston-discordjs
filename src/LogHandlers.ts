@@ -163,11 +163,7 @@ export const handleObject = (
     try {
       return info.toString()
     } catch (err) {
-      try {
-        return JSON.stringify(info)
-      } catch (err2) {
-        return "[object Object]"
-      }
+      return "[object Object]"
     }
   } else {
     try {
