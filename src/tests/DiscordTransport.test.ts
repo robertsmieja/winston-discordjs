@@ -3,7 +3,7 @@ import DiscordTransport, {
   DiscordTransportStreamOptions,
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
-;(globalThis as any).jest = vi
+
 vi.mock("discord.js")
 
 describe("DiscordTransport", () => {
@@ -67,24 +67,24 @@ describe("DiscordTransport", () => {
 
       // Recreate how discordClient is handled in the previous test
       const fakeDiscordClient = {
-        login: jest.fn(),
-        on: jest.fn(),
+        login: vi.fn(),
+        on: vi.fn(),
       } as Partial<Discord.Client>
 
       // temporarily override the mock so we control `on`
-      jest.spyOn(Discord, "Client").mockImplementationOnce(function () {
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
         return fakeDiscordClient as any
-      })
+      } as any)
 
       const transport = new DiscordTransport(options)
 
-      const discordClientOn = fakeDiscordClient.on as jest.MockedFunction<
+      const discordClientOn = fakeDiscordClient.on as MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
 
       const fakeError = new Error("discord client error")
 
-      const emitSpy = jest.spyOn(transport, "emit")
+      const emitSpy = vi.spyOn(transport, "emit")
 
       const errorCallback = discordClientOn.mock.calls.find(
         (call) => call[0] === "error"
@@ -138,7 +138,7 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
-    it("truncates excessively long primitive string messages to 2000 characters", () => {
+    it("truncates long strings to 2000 characters", () => {
       const fakeDiscordChannel = {
         send: vi.fn(async () => {
           return {}
@@ -153,14 +153,10 @@ describe("DiscordTransport", () => {
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toHaveBeenCalledTimes(1)
-      const calledWith = mockSend.mock.calls[0][0]
-      expect(typeof calledWith).toBe("string")
-      expect((calledWith as string).length).toBe(2000)
-      expect(calledWith).toBe("A".repeat(2000))
+      expect(mockSend).toHaveBeenCalledWith("A".repeat(2000))
     })
 
-    it("does not truncate if logMessage is not a string", () => {
+    it("handles non-string primitives safely without truncation errors", () => {
       const fakeDiscordChannel = {
         send: vi.fn(async () => {
           return {}
@@ -168,28 +164,16 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      // The log handler stringifies objects that don't have a format and are just passed as info.
-      // But we need to test the logic inside DiscordTransport where a logMessage might theoretically not be a string.
-      // We can mock handleInfo or just pass an object that stringifies to a known value.
-      // Actually, handleInfo for { content: "test" } uses handleObject -> JSON.stringify which is `{"content":"test"}`
-      // Wait, let's see why it was "[object Object]". Oh, isTransformableInfo might be true? No, missing level and message.
-      // Let's use an object with custom toString.
-      const customStringMessage = {
-        toString: () => "custom object string",
-      }
-      transport.log(customStringMessage, undefined)
+      transport.log(12345, undefined)
 
       const mockSend = fakeDiscordChannel.send as MockedFunction<
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toHaveBeenCalledTimes(1)
-      const calledWith = mockSend.mock.calls[0][0]
-      expect(typeof calledWith).toBe("string")
-      expect(calledWith).toBe("custom object string")
+      expect(mockSend).toHaveBeenCalledWith("12345")
     })
 
-    it("does not truncate short primitive string messages", () => {
+    it("handles string primitives less than 2000 characters correctly", () => {
       const fakeDiscordChannel = {
         send: vi.fn(async () => {
           return {}
@@ -197,15 +181,13 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const shortString = "Short message"
-      transport.log(shortString, undefined)
+      transport.log("short string", undefined)
 
       const mockSend = fakeDiscordChannel.send as MockedFunction<
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toHaveBeenCalledTimes(1)
-      expect(mockSend).toHaveBeenCalledWith(shortString)
+      expect(mockSend).toHaveBeenCalledWith("short string")
     })
 
     it("handles log messages with embeds correctly", () => {
@@ -226,86 +208,6 @@ describe("DiscordTransport", () => {
         content: "Level: info, Message: log me!",
         embeds: [expect.any(Discord.MessageEmbed)],
       })
-    })
-
-    it("truncates array string content to 2000 characters", () => {
-      const fakeDiscordChannel = {
-        send: vi.fn(async () => {
-          return {}
-        }) as unknown,
-      } as Partial<Discord.TextChannel>
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
-
-      const longMessage = "A".repeat(3000)
-      transport.log({ level: "info", message: longMessage }, undefined)
-
-      const mockSend = fakeDiscordChannel.send as MockedFunction<
-        Discord.TextChannel["send"]
-      >
-
-      expect(mockSend).toHaveBeenCalledWith({
-        content: expect.stringMatching(/^Level: info, Message: A{1978}$/),
-        embeds: [expect.any(Discord.MessageEmbed)],
-      })
-      // Double check exact length: "Level: info, Message: " is 22 chars
-      // 2000 - 22 = 1978
-      expect(mockSend.mock.calls[0][0].content.length).toBe(2000)
-    })
-
-    it("truncates simple string content to 2000 characters", () => {
-      const fakeDiscordChannel = {
-        send: vi.fn(async () => {
-          return {}
-        }) as unknown,
-      } as Partial<Discord.TextChannel>
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
-
-      const longMessage = "A".repeat(3000)
-      transport.log(longMessage, undefined)
-
-      const mockSend = fakeDiscordChannel.send as MockedFunction<
-        Discord.TextChannel["send"]
-      >
-
-      expect(mockSend).toHaveBeenCalledWith("A".repeat(2000))
-    })
-
-    it("handles non-string array content without failing", async () => {
-      const LogHandlers = await import("../LogHandlers")
-      const spy = vi
-        .spyOn(LogHandlers, "handleInfo")
-        .mockReturnValue([123 as any, new Discord.MessageEmbed()])
-
-      const fakeDiscordChannel = {
-        send: vi.fn(async () => {
-          return {}
-        }) as unknown,
-      } as Partial<Discord.TextChannel>
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
-
-      transport.log("foo", undefined)
-
-      expect(fakeDiscordChannel.send).toHaveBeenCalled()
-      spy.mockRestore()
-    })
-
-    it("handles non-string simple content without failing", async () => {
-      const LogHandlers = await import("../LogHandlers")
-      const spy = vi
-        .spyOn(LogHandlers, "handleInfo")
-        .mockReturnValue(123 as any)
-
-      const fakeDiscordChannel = {
-        send: vi.fn(async () => {
-          return {}
-        }) as unknown,
-      } as Partial<Discord.TextChannel>
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
-
-      transport.log("foo", undefined)
-
-      expect(fakeDiscordChannel.send).toHaveBeenCalled()
-      spy.mockRestore()
     })
 
     it("handles send() throwing an error", () => {

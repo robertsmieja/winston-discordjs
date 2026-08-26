@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Denial of Logging via Oversized Discord Messages
-**Vulnerability:** The logging framework failed to enforce Discord's 2000-character total message content limit for string primitives, raw errors, and stringified JSON objects. An attacker could intentionally generate oversized logs (e.g. `Error("A".repeat(3000))`) to trigger Discord API rejections, causing logs to be silently dropped and hiding traces of malicious activity.
-**Learning:** External API message content limits must be enforced universally across all log serialization paths (not just embed fields) to prevent Denial of Logging attacks.
-**Prevention:** Always truncate primitive strings, error stacks, and serialized objects (using `typeof value === 'string' ? value.substring(0, limit) : value`) to safely enforce external API limits before sending payloads.
+## 2025-03-31 - Denial of Logging via Unbounded String Primitives
+**Vulnerability:** Discord API rejects messages with content exceeding 2000 characters. The Winston transport enforced this limit for object/logform payloads via embeddings but failed to truncate unbounded string primitive logs. Thus, maliciously large primitive logs (e.g., from an attacker) would be rejected by Discord and silently hidden.
+**Learning:** External API message content size limits must be comprehensively enforced across all input code paths, not just formatted objects. Silent logging failures on large input strings can hide traces of attacks.
+**Prevention:** Always check message bounds limits (e.g. 2000 characters) across all execution paths prior to invoking logging mechanisms dependent on third-party integrations with strict restrictions.

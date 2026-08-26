@@ -61,10 +61,10 @@ export class DiscordTransport extends TransportStream {
             embeds: [embed],
           })
         } else {
-          // 🛡️ Sentinel: Enforce Discord API size limits on text content
-          // Documented at: https://discord.com/developers/docs/resources/message#create-message
-          const content = typeof logMessage === "string" ? logMessage.substring(0, 2000) : logMessage
-          messagePromise = this.discordChannel.send(content)
+          // Discord Message Content Limit: 2000 characters
+          // Documented at: https://discord.com/developers/docs/resources/message#embed-object-embed-limits
+          const truncatedMessage = String(logMessage).substring(0, 2000)
+          messagePromise = this.discordChannel.send(truncatedMessage)
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)
