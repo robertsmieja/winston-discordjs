@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Denial of Service via Unhandled Promise Rejection in Discord Client Login
-**Vulnerability:** The `DiscordTransport` initialized the `discord.js` client using `this.discordClient.login(discordToken)` without appending a `.catch()` block. If an invalid token or network error caused the promise to reject, it triggered an unhandled promise rejection, which crashes Node.js processes.
-**Learning:** Asynchronous initialization of external dependencies that return promises (like API clients or network connections) must always handle rejections gracefully, even if they aren't awaited, to prevent bringing down the entire host application.
-**Prevention:** Always append a `.catch()` block to "fire-and-forget" promises like `login()` calls, ensuring errors are routed to the logging framework's `emit("warn", error)` handlers safely.
+## 2025-02-14 - Denial of Logging via Unhandled Promise Rejection on Login
+**Vulnerability:** The application calls `this.discordClient.login(discordToken)` without appending a `.catch()` block. If the token is invalid or a network error occurs during initialization, an unhandled promise rejection is thrown. In modern Node.js environments, unhandled promise rejections cause the process to crash, leading to a Denial of Service (DoS) and Denial of Logging.
+**Learning:** External asynchronous API operations, especially those initializing connections or clients (like `discordClient.login()`), must have their promise chains properly handled. Logging libraries must fail safely and not bring down the host application.
+**Prevention:** Always append a `.catch()` block to asynchronous client operations to catch initialization errors. Ensure that these errors are gracefully handled or emitted via standard event emitters (e.g., `this.emit("warn", error)`).
