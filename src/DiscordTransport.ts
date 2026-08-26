@@ -56,17 +56,15 @@ export class DiscordTransport extends TransportStream {
         if (Array.isArray(logMessage)) {
           const content = logMessage[0]
           const embed = logMessage[1]
-          // Security: Prevent unrestricted mentions
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
-            allowedMentions: { parse: [] },
+            allowedMentions: { parse: [] }, // Security: Prevent log injection and unrestricted mentions
           })
         } else {
-          // Security: Prevent unrestricted mentions
           messagePromise = this.discordChannel.send({
             content: logMessage,
-            allowedMentions: { parse: [] },
+            allowedMentions: { parse: [] }, // Security: Prevent log injection and unrestricted mentions
           })
         }
         messagePromise.catch((error) => {
