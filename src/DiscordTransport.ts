@@ -62,6 +62,7 @@ export class DiscordTransport extends TransportStream {
             allowedMentions: { parse: [] },
           })
         } else {
+          // Security: Explicitly disable mention parsing to prevent log injection
           messagePromise = this.discordChannel.send({
             content: logMessage,
             allowedMentions: { parse: [] },
