@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2024-05-24 - [Log Injection Mention Vulnerability]
-**Vulnerability:** A log injection vulnerability in the Discord transport module allowed maliciously crafted log messages to trigger unrestricted global mentions (e.g., `@everyone` or `@here`) in Discord channels.
-**Learning:** The default behavior of the discord.js `send()` method processes all standard mentions if no explicit restrictions are defined. Without formatting protections on log contents, the logging library inadvertently became an attack vector for Denial of Service and harassment through spam mentions.
-**Prevention:** Always encapsulate plain text log strings into the payload object format (`{ content: logMessage }`) and explicitly restrict parsing capabilities by enforcing `allowedMentions: { parse: [] }` on every outgoing message across all execution paths.
+## 2025-02-13 - Unrestricted Discord Mentions in Logging Transport
+**Vulnerability:** The Discord logging transport was vulnerable to log injection triggering unintended `@everyone`, `@here`, or specific role/user mentions. If an application logged unfiltered user input containing these mention strings, the Discord bot would alert users.
+**Learning:** The vulnerability existed because the discord.js `send()` method defaults to parsing mentions within the message content if `allowedMentions` is not explicitly restricted.
+**Prevention:** Always restrict mention parsing by default when using discord.js to send logs or user-generated content. Set `allowedMentions: { parse: [] }` in the message payload options to ensure mentions are rendered as plain text without triggering notifications.
