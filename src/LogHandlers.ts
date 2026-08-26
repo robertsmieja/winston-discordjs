@@ -7,12 +7,16 @@ export const isTransformableInfo = (
   info: unknown
 ): info is TransformableInfo => {
   // Prevent TypeError when `in` operator is used on primitive values
-  return Boolean(
-    info &&
-      typeof info === "object" &&
-      "level" in (info as any) &&
-      "message" in (info as any)
-  )
+  try {
+    return Boolean(
+      info &&
+        typeof info === "object" &&
+        "level" in (info as any) &&
+        "message" in (info as any)
+    )
+  } catch {
+    return false
+  }
 }
 
 const sortFields = (fields: string[]): string[] => {
@@ -86,14 +90,26 @@ export const handleLogform = (
   info: TransformableInfo,
   level?: string
 ): [string, MessageEmbed] | undefined => {
-  if ((level && level === info.level) || !level) {
+  let infoLevel: unknown
+  try {
+    infoLevel = info.level
+  } catch {
+    return undefined
+  }
+
+  if ((level && level === infoLevel) || !level) {
     const messageEmbed = new MessageEmbed()
     const logMessageParts: string[] = []
     const color = level
       ? LogLevelToColor[level as LogLevel] ?? "DEFAULT"
       : "DEFAULT"
     messageEmbed.setColor(color)
-    const fields = sortFields(Object.keys(info))
+    let fields: string[]
+    try {
+      fields = sortFields(Object.keys(info))
+    } catch {
+      return undefined
+    }
 
     // Discord Embed & Message Limits
     // Documented at: https://discord.com/developers/docs/resources/message#embed-object-embed-limits
@@ -107,9 +123,15 @@ export const handleLogform = (
 
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
-      if (info[field]) {
+      let value: unknown
+      try {
+        value = info[field]
+      } catch {
+        continue
+      }
+
+      if (value) {
         const capitalizedField = capitalize(field)
-        const value = info[field]
         const stringifiedValue = safeStringify(value)
 
         logMessageParts.push(`${capitalizedField}: ${stringifiedValue}`)
@@ -167,17 +189,34 @@ export const handleObject = (
     } else {
       return handleLogform(info, level)
     }
-  } else if (info instanceof Error && info.stack) {
-    const stackStr = info.stack
-    return typeof stackStr === "string" ? stackStr.substring(0, 2000) : stackStr
-  } else if (
-    typeof info?.toString === "function" &&
-    info.toString !== Object.toString &&
-    info.toString !== Object.prototype.toString
+  }
+
+  let stackStr: unknown
+  try {
+    if (info instanceof Error) stackStr = info.stack
+  } catch {
+    // Error detection or stack access threw — try the remaining fallbacks
+  }
+
+  if (stackStr) {
+    return safeStringify(stackStr).substring(0, 2000)
+  }
+
+  let toStringFn: unknown
+  try {
+    toStringFn = info?.toString
+  } catch {
+    // Property access threw — fall through to the JSON representation
+  }
+
+  if (
+    typeof toStringFn === "function" &&
+    toStringFn !== Object.toString &&
+    toStringFn !== Object.prototype.toString
   ) {
     try {
-      const str = info.toString()
-      return typeof str === "string" ? str.substring(0, 2000) : str
+      const str = Reflect.apply(toStringFn, info, [])
+      return safeStringify(str).substring(0, 2000)
     } catch {
       // toString threw — fall through to the JSON representation
     }

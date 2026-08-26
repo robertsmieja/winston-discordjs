@@ -67,6 +67,19 @@ describe("LogHandlers", () => {
       expect(isTransformableInfo("hello")).toBe(false)
     })
 
+    it("handles throwing membership traps", () => {
+      const throwingProxy = new Proxy(
+        {},
+        {
+          has: () => {
+            throw new Error("has boom")
+          },
+        }
+      )
+
+      expect(isTransformableInfo(throwingProxy)).toBe(false)
+    })
+
     it("handles an empty object", () => {
       expect(isTransformableInfo({})).toBe(false)
     })
@@ -580,6 +593,56 @@ describe("LogHandlers", () => {
 
     it("handles functions that returns boolean", () => {
       expect(handleInfo(() => false)).toBe("false")
+    })
+
+    it("falls back to JSON when reading toString throws", () => {
+      const throwingGetter = Object.defineProperty({}, "toString", {
+        get: () => {
+          throw new Error("getter boom")
+        },
+      })
+
+      expect(handleInfo(throwingGetter)).toBe("{}")
+    })
+
+    it("falls back to JSON when object membership checks throw", () => {
+      const throwingProxy = new Proxy(
+        {},
+        {
+          has: () => {
+            throw new Error("has boom")
+          },
+        }
+      )
+
+      expect(handleInfo(throwingProxy)).toBe("{}")
+    })
+
+    it("ignores logform values when key enumeration throws", () => {
+      const throwingProxy = new Proxy(
+        { level: "info", message: "hello" },
+        {
+          ownKeys: () => {
+            throw new Error("ownKeys boom")
+          },
+        }
+      )
+
+      expect(handleInfo(throwingProxy)).toBeUndefined()
+    })
+
+    it("skips logform fields whose getters throw", () => {
+      const throwingGetter = {
+        level: "info",
+        get message(): string {
+          throw new Error("message boom")
+        },
+      }
+
+      expect(handleInfo(throwingGetter)).toEqual([
+        "Level: info",
+        expect.any(MessageEmbed),
+      ])
     })
 
     it("handles object", () => {

@@ -6,7 +6,7 @@ describe("LogHandlers Coverage Edge Cases", () => {
     it("handles Errors where stack is not a string", () => {
       const errorWithStack = new Error("error message")
       ;(errorWithStack as any).stack = 123
-      expect(handleObject(errorWithStack)).toBe(123)
+      expect(handleObject(errorWithStack)).toBe("123")
     })
 
     it("handles objects where toString() does not return a string", () => {
@@ -15,7 +15,7 @@ describe("LogHandlers Coverage Edge Cases", () => {
           return 123
         },
       })
-      expect(result).toBe(123)
+      expect(result).toBe("123")
     })
 
     it("handles objects where JSON.stringify() returns undefined", () => {

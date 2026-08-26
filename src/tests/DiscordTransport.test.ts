@@ -63,6 +63,37 @@ describe("DiscordTransport", () => {
       expect(mockedOn).toHaveBeenCalledWith("error", expect.any(Function))
     })
 
+    it("emits warn when Discord login rejects", async () => {
+      const options: DiscordTransportStreamOptions = {
+        discordToken: "EXAMPLE_API_TOKEN",
+      }
+      let rejectLogin!: (reason?: unknown) => void
+      const loginPromise = new Promise<string>((_, reject) => {
+        rejectLogin = reject
+      })
+      const fakeDiscordClient = {
+        login: vi.fn(() => loginPromise),
+        on: vi.fn(),
+      } as unknown as Partial<Discord.Client>
+
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        this.login = fakeDiscordClient.login
+        this.on = fakeDiscordClient.on
+        return this
+      } as any)
+
+      const transport = new DiscordTransport(options)
+      const warn = vi.fn()
+      transport.on("warn", warn)
+
+      const fakeError = new Error("Discord login failed")
+      rejectLogin(fakeError)
+
+      await vi.waitFor(() => {
+        expect(warn).toHaveBeenCalledWith(fakeError)
+      })
+    })
+
     it("emits warn event when discordClient emits error", () => {
       const options: DiscordTransportStreamOptions = {
         discordToken: "EXAMPLE_API_TOKEN",
@@ -142,6 +173,25 @@ describe("DiscordTransport", () => {
 
       expect(mockSend).toHaveBeenCalledWith({
         content: "log me!",
+        allowedMentions: { parse: [] },
+      })
+    })
+
+    it("sends custom object output as string content", () => {
+      const fakeDiscordChannel = {
+        send: vi.fn(async () => {
+          return {}
+        }) as unknown,
+      } as Partial<Discord.TextChannel>
+      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
+
+      transport.log({ toString: () => 123 } as any, undefined)
+
+      const mockSend = fakeDiscordChannel.send as MockedFunction<
+        Discord.TextChannel["send"]
+      >
+      expect(mockSend).toHaveBeenCalledWith({
+        content: "123",
         allowedMentions: { parse: [] },
       })
     })
