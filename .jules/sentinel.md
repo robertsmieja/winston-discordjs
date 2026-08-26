@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2024-05-18 - Unrestricted Discord Mentions via Log Injection
-**Vulnerability:** Log messages sent to the Discord API did not explicitly restrict mention parsing. An attacker could inject `@everyone`, `@here`, or specific user/role IDs into the log content, causing the Discord bot to ping users maliciously when the log is delivered.
-**Learning:** External APIs that parse content for mentions or pings must be configured to disable this behavior for untrusted or dynamic content, especially in logging frameworks where the payload is partially or entirely user-controlled.
-**Prevention:** Always set `allowedMentions: { parse: [] }` (or the equivalent API option) in the message payload when sending log data or other unverified content to platforms like Discord.
+## 2024-05-18 - Unrestricted Mentions via Log Injection
+**Vulnerability:** Discord's API parses and triggers mentions (e.g., `@everyone`, `@here`) in log messages sent by the transport if not explicitly disabled. An attacker could exploit this by injecting mention strings into log outputs to cause notification spam.
+**Learning:** External communication APIs (like Discord, Slack) often support rich text formatting and mentions by default. Sending unsanitized log content to these APIs without disabling parsing features creates a log injection vulnerability.
+**Prevention:** Always explicitly set `allowedMentions: { parse: [] }` (or the equivalent API property) when sending automated logs or simple strings to messaging platforms to prevent arbitrary mentions from being triggered.
