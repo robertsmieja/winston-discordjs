@@ -6,11 +6,12 @@ import { LogLevel, LogLevelToColor } from "./LogLevels"
 export const isTransformableInfo = (
   info: unknown
 ): info is TransformableInfo => {
+  // Prevent TypeError when `in` operator is used on primitive values
   return Boolean(
-    typeof info === "object" &&
-      info !== null &&
-      "level" in info &&
-      "message" in info
+    info &&
+      typeof info === "object" &&
+      "level" in (info as any) &&
+      "message" in (info as any)
   )
 }
 
@@ -63,10 +64,6 @@ const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
-  // Optimization: Skip try/catch overhead and function call for primitive strings
-  // Yields ~50% performance improvement in microbenchmarks
-  if (typeof value === "string") return value
-
   try {
     return String(value)
   } catch (err) {
