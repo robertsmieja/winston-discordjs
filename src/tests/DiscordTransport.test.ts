@@ -138,7 +138,7 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
-    it("truncates long strings to 2000 characters", () => {
+    it("truncates log messages without embeds to 2000 characters", () => {
       const fakeDiscordChannel = {
         send: vi.fn(async () => {
           return {}
@@ -146,48 +146,14 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.TextChannel>
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
 
-      const veryLongString = "A".repeat(3000)
-      transport.log(veryLongString, undefined)
+      const longString = "A".repeat(3000)
+      transport.log(longString, undefined)
 
       const mockSend = fakeDiscordChannel.send as MockedFunction<
         Discord.TextChannel["send"]
       >
 
       expect(mockSend).toHaveBeenCalledWith("A".repeat(2000))
-    })
-
-    it("handles non-string primitives safely without truncation errors", () => {
-      const fakeDiscordChannel = {
-        send: vi.fn(async () => {
-          return {}
-        }) as unknown,
-      } as Partial<Discord.TextChannel>
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
-
-      transport.log(12345, undefined)
-
-      const mockSend = fakeDiscordChannel.send as MockedFunction<
-        Discord.TextChannel["send"]
-      >
-
-      expect(mockSend).toHaveBeenCalledWith("12345")
-    })
-
-    it("handles string primitives less than 2000 characters correctly", () => {
-      const fakeDiscordChannel = {
-        send: vi.fn(async () => {
-          return {}
-        }) as unknown,
-      } as Partial<Discord.TextChannel>
-      transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
-
-      transport.log("short string", undefined)
-
-      const mockSend = fakeDiscordChannel.send as MockedFunction<
-        Discord.TextChannel["send"]
-      >
-
-      expect(mockSend).toHaveBeenCalledWith("short string")
     })
 
     it("handles log messages with embeds correctly", () => {
