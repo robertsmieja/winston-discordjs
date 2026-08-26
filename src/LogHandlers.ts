@@ -43,18 +43,14 @@ const sortFields = (fields: string[]): string[] => {
 }
 
 export const handlePrimitive = (info: Primitive): string => {
-  let str: string
   switch (typeof info) {
     case "string": {
-      str = info
-      break
+      return info
     }
     default: {
-      str = String(info)
-      break
+      return String(info)
     }
   }
-  return typeof str === "string" ? str.substring(0, 2000) : str
 }
 
 // Extracted outside to avoid closure recreation on every log invocation
@@ -62,7 +58,6 @@ const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
-  if (typeof value === "string") return value
   try {
     return String(value)
   } catch (err) {
@@ -80,16 +75,12 @@ export const handleLogform = (
 ): [string, MessageEmbed] | undefined => {
   if ((level && level === info.level) || !level) {
     const messageEmbed = new MessageEmbed()
+    const logMessageParts: string[] = []
     const color = level
       ? LogLevelToColor[level as LogLevel] ?? "DEFAULT"
       : "DEFAULT"
     messageEmbed.setColor(color)
     const fields = sortFields(Object.keys(info))
-
-    // Pre-allocate the exact size array to avoid dynamic resizing overhead
-    // and closure recreations.
-    const logMessageParts = new Array(fields.length)
-    let logMessagePartsIdx = 0
 
     // Discord Embed & Message Limits
     // Documented at: https://discord.com/developers/docs/resources/message#embed-object-embed-limits
@@ -108,7 +99,7 @@ export const handleLogform = (
         const value = info[field]
         const stringifiedValue = safeStringify(value)
 
-        logMessageParts[logMessagePartsIdx++] = `${capitalizedField}: ${stringifiedValue}`
+        logMessageParts.push(`${capitalizedField}: ${stringifiedValue}`)
 
         if (fieldCount < 25 && totalEmbedLength < 6000) {
           let truncatedName = capitalizedField.substring(0, 256)
@@ -138,7 +129,6 @@ export const handleLogform = (
       }
     }
 
-    logMessageParts.length = logMessagePartsIdx
     const fullMessage = logMessageParts.join(", ")
     const truncatedMessage = fullMessage.substring(0, 2000)
 
@@ -165,20 +155,24 @@ export const handleObject = (
       return handleLogform(info, level)
     }
   } else if (info instanceof Error && info.stack) {
-    const stackStr = info.stack
-    return typeof stackStr === "string" ? stackStr.substring(0, 2000) : stackStr
+    return info.stack
   } else if (
     typeof info?.toString === "function" &&
-    info.toString !== Object.toString &&
     info.toString !== Object.prototype.toString
   ) {
-    const str = info.toString()
-    return typeof str === "string" ? str.substring(0, 2000) : str
+    try {
+      return info.toString()
+    } catch (err) {
+      try {
+        return JSON.stringify(info)
+      } catch (err2) {
+        return "[object Object]"
+      }
+    }
   } else {
     try {
       // this will call toJSON on the object, if it exists
-      const jsonStr = JSON.stringify(info)
-      return typeof jsonStr === "string" ? jsonStr.substring(0, 2000) : jsonStr
+      return JSON.stringify(info)
     } catch (err) {
       return "[object Object]"
     }
