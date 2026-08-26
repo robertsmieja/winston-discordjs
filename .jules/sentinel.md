@@ -7,7 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
-## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
-**Vulnerability:** Log messages written via the Discord transport were sent without the `allowedMentions` option configured. If an application logged arbitrary user input (e.g., usernames, chat messages, or HTTP request parameters) containing Discord mention syntax like `@everyone` or `<@userid>`, the Winston transport would blindly send it, resulting in unrestricted pinging and potential targeted harassment or noise masking via log injection.
-**Learning:** All outputs sent to communication platforms like Discord or Slack that automatically parse special ping sequences must explicitly restrict or disable mention parsing by default, as logs inherently aggregate untrusted data.
-**Prevention:** Explicitly pass `allowedMentions: { parse: [] }` in the message options for all log payloads to ensure log content is treated strictly as text rather than actionable platform commands.
+
+## 2025-02-13 - Unrestricted Discord Mentions
+**Vulnerability:** Log messages were sent to Discord without restricting mentions, allowing an attacker to inject `@everyone` or `@here` in logs and ping all server members.
+**Learning:** When sending untrusted user data to chat platforms, you must explicitly disable parsing of mentions/pings to prevent notification spam and abuse.
+**Prevention:** Always set `allowedMentions: { parse: [] }` (or equivalent) in message payloads to Discord.
