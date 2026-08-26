@@ -6,12 +6,7 @@ import { LogLevel, LogLevelToColor } from "./LogLevels"
 export const isTransformableInfo = (
   info: unknown
 ): info is TransformableInfo => {
-  return Boolean(
-    typeof info === "object" &&
-      info !== null &&
-      "level" in (info as any) &&
-      "message" in (info as any)
-  )
+  return Boolean(info && "level" in (info as any) && "message" in (info as any))
 }
 
 const sortFields = (fields: string[]): string[] => {
@@ -63,8 +58,9 @@ const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
-  // Bypassing string coercion overhead for primitive strings improves performance
+  // Bypassing try-catch block for string primitives to avoid unnecessary overhead in hot paths
   if (typeof value === "string") return value
+
   try {
     return String(value)
   } catch (err) {
@@ -165,13 +161,9 @@ export const handleObject = (
     return info.stack
   } else if (
     typeof info?.toString === "function" &&
-    info.toString !== Object.prototype.toString
+    info.toString !== Object.toString
   ) {
-    try {
-      return info.toString()
-    } catch (err) {
-      return "[object Object]"
-    }
+    return info.toString()
   } else {
     try {
       // this will call toJSON on the object, if it exists
