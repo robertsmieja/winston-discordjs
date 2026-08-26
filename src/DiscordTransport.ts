@@ -33,10 +33,7 @@ export class DiscordTransport extends TransportStream {
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
-          // 🛡️ Sentinel: Catch unhandled promise rejections to prevent DoS crashes
-          this.discordClient.login(discordToken).catch((error) => {
-            this.emit("warn", error)
-          })
+          this.discordClient.login(discordToken)
         }
       }
 
@@ -56,8 +53,6 @@ export class DiscordTransport extends TransportStream {
 
       if (this.discordChannel && logMessage) {
         let messagePromise: Promise<Message>
-        // Security: Explicitly disable mention parsing to prevent log injection
-        // where arbitrary user input could trigger @everyone or user pings.
         if (Array.isArray(logMessage)) {
           const content = logMessage[0]
           const embed = logMessage[1]
@@ -67,8 +62,9 @@ export class DiscordTransport extends TransportStream {
             allowedMentions: { parse: [] },
           })
         } else {
+          // Prevent log injection and unrestricted Discord mentions
           messagePromise = this.discordChannel.send({
-            content: logMessage as string,
+            content: logMessage,
             allowedMentions: { parse: [] },
           })
         }
