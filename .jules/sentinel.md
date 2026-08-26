@@ -7,7 +7,8 @@
 **Vulnerability:** Maliciously crafted prototype-less objects (e.g. `Object.create(null)`) or objects that intentionally throw errors in `.toString()` caused the logging framework to crash the Node process when it attempted to serialize log messages via direct string interpolation.
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
-## 2024-05-24 - Unrestricted Discord Mentions in Logging
-**Vulnerability:** Discord messages sent by the transport did not explicitly restrict mentions. If an application logged unfiltered user input containing `@everyone` or `@here`, the Discord bot would inadvertently ping all users in the channel, creating a denial of service or annoyance vector.
-**Learning:** All external messages sent to platforms with mention capabilities (like Discord) must strictly define mention behavior to prevent log injection from becoming a disruptive channel ping.
-**Prevention:** Always include `allowedMentions: { parse: [] }` (or equivalent) when sending payloads to Discord from automated logging bots, unless explicit mentions are required by the business logic.
+
+## 2025-02-12 - Log Injection and Unrestricted Mentions
+**Vulnerability:** Log messages sent to Discord via simple strings without `allowedMentions` restrictions can be manipulated by attackers to include `@everyone` or `@here` mentions, causing mass notification spam.
+**Learning:** Unrestricted mentions in logging integrations pose a risk of log injection attacks where malicious input triggers unwanted notifications.
+**Prevention:** Always explicitly disable mentions by setting `allowedMentions: { parse: [] }` in the Discord message payload.
