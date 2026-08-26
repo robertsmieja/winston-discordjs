@@ -33,10 +33,7 @@ export class DiscordTransport extends TransportStream {
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
-          // SEC-FIX: Prevent unhandled promise rejections from crashing the process
-          this.discordClient.login(discordToken).catch((error) => {
-            this.emit("warn", error)
-          })
+          this.discordClient.login(discordToken)
         }
       }
 
@@ -62,13 +59,11 @@ export class DiscordTransport extends TransportStream {
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
-            // Prevent arbitrary pings via log injection
             allowedMentions: { parse: [] },
           })
         } else {
           messagePromise = this.discordChannel.send({
             content: logMessage,
-            // Prevent arbitrary pings via log injection
             allowedMentions: { parse: [] },
           })
         }
