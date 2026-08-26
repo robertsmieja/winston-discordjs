@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2024-06-27 - Log Injection via Unrestricted Mentions
-**Vulnerability:** Discord allows pinging roles (e.g., @everyone) or users. When logs containing user-provided input are sent directly to Discord channels via the transport layer, attackers could perform a log injection attack by inserting mention payloads into their input. The logging framework would dutifully output these mentions, inadvertently pinging large groups of people.
-**Learning:** External services like Discord treat text messages differently than traditional log files by parsing and executing rich features (like mentions). All raw log output sent to such services must explicitly disable these parsing features at the transport boundary to prevent unintentional pings.
-**Prevention:** Universally enforce `allowedMentions: { parse: [] }` in all `discordChannel.send()` payloads, refactoring simple string inputs into explicit message objects.
+## 2025-02-23 - Log Injection / Unrestricted Mentions via Discord Transport
+**Vulnerability:** The Winston Discord transport passed string messages directly to `discordChannel.send()` without restricting allowed mentions. This allowed attackers to perform log injection attacks, where maliciously crafted input (e.g. `<@everyone>`) included in logs would trigger unwanted Discord mentions, causing harassment or notification spam.
+**Learning:** External transports (like Discord) that parse and execute commands or mentions within simple strings need explicit restrictions at the transport boundary to prevent log injection from escalating into unwanted side effects.
+**Prevention:** Always explicitly disable mentions by passing `allowedMentions: { parse: [] }` in the Discord message payload, effectively sandboxing log output.
