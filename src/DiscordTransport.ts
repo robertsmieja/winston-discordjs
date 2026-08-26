@@ -33,9 +33,7 @@ export class DiscordTransport extends TransportStream {
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
-          this.discordClient.login(discordToken).catch((error) => {
-            this.emit("warn", error)
-          })
+          this.discordClient.login(discordToken)
         }
       }
 
@@ -56,18 +54,24 @@ export class DiscordTransport extends TransportStream {
       if (this.discordChannel && logMessage) {
         let messagePromise: Promise<Message>
         if (Array.isArray(logMessage)) {
-          // Discord Message Content Limit: 2000 characters
-          // Documented at: https://discord.com/developers/docs/resources/message#create-message
-          const content = typeof logMessage[0] === 'string' ? logMessage[0].substring(0, 2000) : logMessage[0]
+          let content = logMessage[0]
+          // Enforce Discord API limit: Content <= 2000 characters
+          // https://discord.com/developers/docs/resources/message
+          if (typeof content === "string") {
+            content = content.substring(0, 2000)
+          }
           const embed = logMessage[1]
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
           })
         } else {
-          // Discord Message Content Limit: 2000 characters
-          // Documented at: https://discord.com/developers/docs/resources/message#create-message
-          const content = typeof logMessage === 'string' ? logMessage.substring(0, 2000) : logMessage
+          let content = logMessage
+          // Enforce Discord API limit: Content <= 2000 characters
+          // https://discord.com/developers/docs/resources/message
+          if (typeof content === "string") {
+            content = content.substring(0, 2000)
+          }
           messagePromise = this.discordChannel.send(content)
         }
         messagePromise.catch((error) => {
