@@ -33,9 +33,7 @@ export class DiscordTransport extends TransportStream {
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
-          this.discordClient.login(discordToken).catch((error) => {
-            this.emit("warn", error)
-          })
+          this.discordClient.login(discordToken)
         }
       }
 
@@ -61,11 +59,13 @@ export class DiscordTransport extends TransportStream {
           messagePromise = this.discordChannel.send({
             content,
             embeds: [embed],
+            // Prevent mentions from being parsed to avoid log injection risks
             allowedMentions: { parse: [] },
           })
         } else {
           messagePromise = this.discordChannel.send({
             content: logMessage,
+            // Prevent mentions from being parsed to avoid log injection risks
             allowedMentions: { parse: [] },
           })
         }
