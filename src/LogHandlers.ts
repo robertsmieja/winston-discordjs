@@ -12,32 +12,34 @@ export const isTransformableInfo = (
 const sortFields = (fields: string[]): string[] => {
   // This array defines the exact, fixed order in which priority fields
   // ("timestamp", "level", "message") must appear in the final output.
+  const length = fields.length
+  const result = new Array(length)
+  let resultIdx = 0
+
   let hasTimestamp = false
   let hasLevel = false
   let hasMessage = false
 
-  for (let i = 0; i < fields.length; i++) {
+  for (let i = 0; i < length; i++) {
     const field = fields[i]
     if (field === "timestamp") hasTimestamp = true
     else if (field === "level") hasLevel = true
     else if (field === "message") hasMessage = true
   }
 
-  // Pre-allocate the exact size array to avoid dynamic resizing overhead
-  const result = new Array(fields.length)
-  let resultIdx = 0
-
   if (hasTimestamp) result[resultIdx++] = "timestamp"
   if (hasLevel) result[resultIdx++] = "level"
   if (hasMessage) result[resultIdx++] = "message"
 
-  let otherIdx = resultIdx
-  for (let i = 0; i < fields.length; i++) {
+  for (let i = 0; i < length; i++) {
     const field = fields[i]
     if (field !== "timestamp" && field !== "level" && field !== "message") {
-      result[otherIdx++] = field
+      result[resultIdx++] = field
     }
   }
+
+  // Adjust length in case there were missing priority fields (array length may be smaller)
+  result.length = resultIdx
 
   return result
 }
@@ -56,18 +58,6 @@ export const handlePrimitive = (info: Primitive): string => {
 // Extracted outside to avoid closure recreation on every log invocation
 const capitalize = (str: string): string =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1)
-
-const safeStringify = (value: any): string => {
-  try {
-    return String(value)
-  } catch (err) {
-    try {
-      return JSON.stringify(value) || "[object Object]"
-    } catch (err2) {
-      return "[object Object]"
-    }
-  }
-}
 
 export const handleLogform = (
   info: TransformableInfo,
@@ -97,13 +87,12 @@ export const handleLogform = (
       if (info[field]) {
         const capitalizedField = capitalize(field)
         const value = info[field]
-        const stringifiedValue = safeStringify(value)
 
-        logMessageParts.push(`${capitalizedField}: ${stringifiedValue}`)
+        logMessageParts.push(`${capitalizedField}: ${value}`)
 
         if (fieldCount < 25 && totalEmbedLength < 6000) {
           let truncatedName = capitalizedField.substring(0, 256)
-          let truncatedValue = stringifiedValue.substring(0, 1024)
+          let truncatedValue = value.toString().substring(0, 1024)
 
           // Ensure we don't exceed the 6000 character total limit for embeds
           const availableSpace = 6000 - totalEmbedLength
