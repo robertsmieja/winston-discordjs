@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2024-04-26 - Prevent Unintended Mentions via Log Injection
-**Vulnerability:** Discord transport was forwarding raw log content directly to channels, allowing maliciously crafted log messages containing strings like `@everyone`, `@here`, or `<@USER_ID>` to trigger unauthorized mentions (pinging users/roles) because Discord automatically parses mentions by default.
-**Learning:** Log messages are often composed of user-controlled input. If the logging destination is a Discord channel, any input reflecting mention syntax will function as a real mention unless explicitly disabled by the transport.
-**Prevention:** Always include `allowedMentions: { parse: [] }` in the payload options for `discordChannel.send()` to strictly instruct the Discord API not to parse any @-mentions contained within the message content or embeds.
+## 2025-04-27 - [Log Injection & Unrestricted Mentions in Discord Transports]
+**Vulnerability:** The application was passing plain string messages to `this.discordChannel.send()` inside the logging transport module. This allowed any un-sanitized log input (e.g. usernames or debug values containing `@everyone` or `@here`) to silently "ping" and notify all users in the attached Discord channel.
+**Learning:** In logging integrations like Discord transports, we often forget that the output destination renders and executes markdown or special mention tags natively. What is simply text in a standard file logger becomes an executable command in chat APIs.
+**Prevention:** Always enforce strict boundaries at the transport layer for chat APIs. For `discord.js`, universally pass `{ content: logMessage, allowedMentions: { parse: [] } }` to completely disable server-wide, role, or user pings for all log output unless specifically and deliberately authorized.
