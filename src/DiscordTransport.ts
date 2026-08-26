@@ -33,7 +33,9 @@ export class DiscordTransport extends TransportStream {
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
-          this.discordClient.login(discordToken)
+          this.discordClient.login(discordToken).catch((error) => {
+            this.emit("warn", error)
+          })
         }
       }
 

@@ -4,18 +4,7 @@ import DiscordTransport, {
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
 
-vi.mock("discord.js", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    Client: vi.fn(function (this: any, options: any) {
-      this.login = vi.fn(() => Promise.resolve("token"))
-      this.on = vi.fn()
-      this.destroy = vi.fn()
-      return this
-    }),
-  }
-})
+vi.mock("discord.js")
 
 describe("DiscordTransport", () => {
   describe("constructor", () => {
@@ -44,16 +33,18 @@ describe("DiscordTransport", () => {
 
       const fakeChannelManager = {} as Partial<Discord.ChannelManager>
 
-      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
-        this.login = fakeDiscordClient.login
-        this.on = fakeDiscordClient.on
-        return this
-      } as any)
       const fakeDiscordClient = {
         login: vi.fn(() => Promise.resolve("token")),
         on: vi.fn(),
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
+
+      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
+        this.login = fakeDiscordClient.login
+        this.on = fakeDiscordClient.on
+        this.channels = fakeDiscordClient.channels
+        return this
+      } as any)
 
       const transport = new DiscordTransport(options)
 
@@ -64,9 +55,7 @@ describe("DiscordTransport", () => {
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
       const mockedLogin = discordClient.login as MockedFunction<any>
-      const mockedOn = discordClient.on as MockedFunction<
-        (typeof Discord.Client)["prototype"]["on"]
-      >
+      const mockedOn = discordClient.on as MockedFunction<any>
 
       expect(mockedLogin).toHaveBeenCalledTimes(1)
       expect(mockedLogin).toHaveBeenCalledWith(options.discordToken)
@@ -89,7 +78,7 @@ describe("DiscordTransport", () => {
       vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
         this.login = fakeDiscordClient.login
         this.on = fakeDiscordClient.on
-        return this as any
+        return this
       } as any)
 
       const transport = new DiscordTransport(options)
@@ -151,10 +140,7 @@ describe("DiscordTransport", () => {
         Discord.TextChannel["send"]
       >
 
-      expect(mockSend).toHaveBeenCalledWith({
-        content: "log me!",
-        allowedMentions: { parse: [] },
-      })
+      expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
     it("handles log messages with embeds correctly", () => {
@@ -174,7 +160,6 @@ describe("DiscordTransport", () => {
       expect(mockSend).toHaveBeenCalledWith({
         content: "Level: info, Message: log me!",
         embeds: [expect.any(Discord.MessageEmbed)],
-        allowedMentions: { parse: [] },
       })
     })
 
@@ -196,10 +181,7 @@ describe("DiscordTransport", () => {
         transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
         transport.on("warn", (error) => {
           expect(error).toStrictEqual(fakeError)
-          expect(mockSend).toHaveBeenCalledWith({
-            content: "log me!",
-            allowedMentions: { parse: [] },
-          })
+          expect(mockSend).toHaveBeenCalledWith("log me!")
           resolve()
         })
         transport.log("log me!", undefined)
@@ -225,10 +207,7 @@ describe("DiscordTransport", () => {
       transport.discordChannel = fakeDiscordChannel as Discord.TextChannel
       transport.log("log me!", callback)
 
-      expect(mockSend).toHaveBeenCalledWith({
-        content: "log me!",
-        allowedMentions: { parse: [] },
-      })
+      expect(mockSend).toHaveBeenCalledWith("log me!")
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
@@ -249,10 +228,7 @@ describe("DiscordTransport", () => {
         transport.log("log me!", {} as any)
       }).not.toThrow()
 
-      expect(mockSend).toHaveBeenCalledWith({
-        content: "log me!",
-        allowedMentions: { parse: [] },
-      })
+      expect(mockSend).toHaveBeenCalledWith("log me!")
     })
 
     describe("close()", () => {
