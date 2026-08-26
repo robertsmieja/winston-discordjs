@@ -49,14 +49,18 @@ const sortFields = (fields: string[]): string[] => {
 }
 
 export const handlePrimitive = (info: Primitive): string => {
+  let str: string
   switch (typeof info) {
     case "string": {
-      return info
+      str = info
+      break
     }
     default: {
-      return String(info)
+      str = String(info)
+      break
     }
   }
+  return typeof str === "string" ? str.substring(0, 2000) : str
 }
 
 // Extracted outside to avoid closure recreation on every log invocation
@@ -164,19 +168,25 @@ export const handleObject = (
       return handleLogform(info, level)
     }
   } else if (info instanceof Error && info.stack) {
-    return info.stack
+    const stackStr = info.stack
+    return typeof stackStr === "string" ? stackStr.substring(0, 2000) : stackStr
   } else if (
     typeof info?.toString === "function" &&
-    info.toString !== Object.toString
+    info.toString !== Object.toString &&
+    info.toString !== Object.prototype.toString
   ) {
-    return info.toString()
-  } else {
     try {
-      // this will call toJSON on the object, if it exists
-      return JSON.stringify(info)
-    } catch (err) {
-      return "[object Object]"
+      const str = info.toString()
+      return typeof str === "string" ? str.substring(0, 2000) : str
+    } catch {
+      // toString threw — fall through to the JSON representation
     }
+  }
+  try {
+    const jsonStr = JSON.stringify(info)
+    return typeof jsonStr === "string" ? jsonStr.substring(0, 2000) : jsonStr
+  } catch {
+    return "[object Object]"
   }
 }
 
