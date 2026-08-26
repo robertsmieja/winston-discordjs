@@ -63,7 +63,7 @@ export class DiscordTransport extends TransportStream {
           })
         } else {
           messagePromise = this.discordChannel.send({
-            content: logMessage,
+            content: logMessage as string,
             allowedMentions: { parse: [] },
           })
         }
