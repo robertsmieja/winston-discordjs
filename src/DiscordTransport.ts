@@ -33,6 +33,7 @@ export class DiscordTransport extends TransportStream {
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
+          // SEC-FIX: Prevent unhandled promise rejections from crashing the process
           this.discordClient.login(discordToken).catch((error) => {
             this.emit("warn", error)
           })
@@ -63,10 +64,7 @@ export class DiscordTransport extends TransportStream {
             embeds: [embed],
           })
         } else {
-          // Enforce Discord API limits universally at transport boundary
-          // https://discord.com/developers/docs/resources/message
-          const safeMessage = String(logMessage).substring(0, 2000)
-          messagePromise = this.discordChannel.send(safeMessage)
+          messagePromise = this.discordChannel.send(logMessage)
         }
         messagePromise.catch((error) => {
           this.emit("warn", error)

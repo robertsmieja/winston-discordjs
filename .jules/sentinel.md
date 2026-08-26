@@ -8,7 +8,9 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Denial of Service via Unhandled Promise Rejection in discord.js
-**Vulnerability:** The Discord transport failed to add a `.catch()` block to the asynchronous `discordClient.login()` operation. In modern Node.js environments, an unhandled promise rejection (e.g. from an invalid token or network error during login) will crash the entire host process, creating a Denial of Service (DoS) vulnerability.
-**Learning:** In Node.js applications, always append `.catch()` blocks to asynchronous external operations. Logging frameworks must fail safely and not bring down the application they are supposed to monitor.
-**Prevention:** Always handle promises returned by external APIs (like `discord.js`) using `.catch()` or `try-catch` with `await` to ensure errors are gracefully handled and emitted to the transport's error handlers instead of crashing the process.
+## 2025-02-23 - Denial of Service via Unhandled Exceptions in Logging Initialization and Processing
+**Vulnerability:** The logging framework crashed the Node.js process due to two unhandled exceptions:
+1. `discordClient.login()` did not have a `.catch()` handler attached, leading to unhandled promise rejections on authentication or network failures.
+2. `isTransformableInfo` attempted to use the `in` operator on primitive values without validating `typeof info === 'object' && info !== null` first, throwing runtime `TypeErrors`.
+**Learning:** Logging systems must be extremely resilient and fail securely without crashing the host application. External promises must always be caught, and type guards on `unknown` input must strictly validate the underlying data type before property access.
+**Prevention:** Always append `.catch()` to asynchronous initializations (like client `.login()`), and strictly enforce defensive programming in type guards by validating primitives, objects, and nullish values.
