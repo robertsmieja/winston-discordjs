@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Missing allowedMentions leading to Log Injection & Unhandled Promise Rejection DoS
-**Vulnerability:** Sending string log messages directly to Discord API without setting `allowedMentions: { parse: [] }` allows attackers who can inject string payloads into the logs to trigger arbitrary "@" mentions in the Discord channel. In addition, an unhandled Promise rejection on `discordClient.login()` would crash the Node.js application (DoS) if authentication failed.
-**Learning:** External transports like Discord must restrict potentially harmful dynamic side effects like mentions when relaying un-sanitized log strings. Furthermore, external async calls like authentication must always have a `.catch()` block to fail safely without bringing down the host application.
-**Prevention:** Always set explicit bounds and permissions on output bounds (e.g., passing `{ content: message, allowedMentions: { parse: [] } }` over a simple string). Ensure external Promises have a `.catch()` attached.
+## 2025-02-13 - Log Injection via Discord Mentions
+**Vulnerability:** Discord allows pinging/mentioning users and roles like @everyone, @here, or specific user/role IDs if they are present in a message's content. The logging transport didn't restrict `allowedMentions`, which meant that any user-controlled input (e.g., a username or message) included in logs could trigger unintended notifications or annoyances in the logging channel.
+**Learning:** Sending unsanitized log content to chat platforms that parse mentions can lead to abuse, alert fatigue, or social engineering attacks if an attacker injects mentions in logged inputs.
+**Prevention:** Always disable parsing of mentions (e.g. `allowedMentions: { parse: [] }` in Discord) for automated notifications and logs to prevent input-driven pings.
