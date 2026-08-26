@@ -8,7 +8,7 @@
 **Learning:** String interpolation or `.toString()` calls on arbitrary external data should never be trusted, especially in a logging path where "Denial of Logging" attacks can occur by silently triggering unhandled exceptions.
 **Prevention:** Implement a robust fallback serialization mechanism (like `safeStringify` combining `String()`, `JSON.stringify()`, and hardcoded defaults inside `try-catch` blocks) before formatting objects for logging transport payloads.
 
-## 2025-02-12 - Log Injection via Unrestricted Discord Mentions
-**Vulnerability:** Log messages sent to Discord were not restricting mentions. If an application logged arbitrary user input (like usernames or user-provided error strings), an attacker could inject mentions (e.g., @everyone or @here) that would be parsed and pinged by Discord, leading to notification spam and potential abuse.
-**Learning:** Any logging transport that relies on an external system with a rich parsing layer (like Discord's mention system) must explicitly disable that parsing layer by default for arbitrary text content to prevent unintended log injection.
-**Prevention:** Always explicitly set `allowedMentions: { parse: [] }` on payloads sent to the Discord API to ensure arbitrary text is never treated as a mention.
+## 2025-02-12 - Missing allowedMentions leading to Log Injection & Unhandled Promise Rejection DoS
+**Vulnerability:** Sending string log messages directly to Discord API without setting `allowedMentions: { parse: [] }` allows attackers who can inject string payloads into the logs to trigger arbitrary "@" mentions in the Discord channel. In addition, an unhandled Promise rejection on `discordClient.login()` would crash the Node.js application (DoS) if authentication failed.
+**Learning:** External transports like Discord must restrict potentially harmful dynamic side effects like mentions when relaying un-sanitized log strings. Furthermore, external async calls like authentication must always have a `.catch()` block to fail safely without bringing down the host application.
+**Prevention:** Always set explicit bounds and permissions on output bounds (e.g., passing `{ content: message, allowedMentions: { parse: [] } }` over a simple string). Ensure external Promises have a `.catch()` attached.

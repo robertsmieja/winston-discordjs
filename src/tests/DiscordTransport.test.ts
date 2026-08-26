@@ -4,7 +4,17 @@ import DiscordTransport, {
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
 
-vi.mock("discord.js")
+vi.mock("discord.js", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    Client: vi.fn(function () {
+      this.login = vi.fn(() => Promise.resolve("token"))
+      this.on = vi.fn()
+      this.destroy = vi.fn()
+    }),
+  }
+})
 
 describe("DiscordTransport", () => {
   describe("constructor", () => {
@@ -39,11 +49,6 @@ describe("DiscordTransport", () => {
       } as Partial<Discord.Client>
       fakeDiscordClient.channels = fakeChannelManager as Discord.ChannelManager
 
-      // vi.mock replaces the prototype. Explicitly injecting it:
-      vi.spyOn(Discord, "Client").mockImplementationOnce(function (this: any) {
-        return fakeDiscordClient as any
-      } as any)
-
       const transport = new DiscordTransport(options)
 
       expect(transport).toBeDefined()
@@ -52,9 +57,7 @@ describe("DiscordTransport", () => {
 
       const discordClient = transport.discordClient as typeof fakeDiscordClient
 
-      const mockedLogin = fakeDiscordClient.login as MockedFunction<
-        (typeof Discord.Client)["prototype"]["login"]
-      >
+      const mockedLogin = discordClient.login as MockedFunction<any>
       const mockedOn = discordClient.on as MockedFunction<
         (typeof Discord.Client)["prototype"]["on"]
       >
