@@ -23,6 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Enable pnpm (hosted runners don't ship Corepack; pinned SHA)
+        uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+        with:
+          version: 11.24.0
+
       - name: Setup Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
@@ -34,9 +39,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Enable pnpm (via Corepack, uses package.json packageManager)
-        run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
