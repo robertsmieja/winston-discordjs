@@ -10,9 +10,9 @@ export const isTransformableInfo = (
   try {
     return Boolean(
       info &&
-        typeof info === "object" &&
-        "level" in (info as any) &&
-        "message" in (info as any)
+      typeof info === "object" &&
+      "level" in (info as any) &&
+      "message" in (info as any)
     )
   } catch {
     return false
@@ -68,13 +68,14 @@ export const handlePrimitive = (info: Primitive): string => {
 }
 
 // Extracted outside to avoid closure recreation on every log invocation
+// toUpperCase: faster for ASCII field names than locale-aware casing, identical here.
 const capitalize = (str: string): string =>
-  str.charAt(0).toLocaleUpperCase() + str.slice(1)
+  str.charAt(0).toUpperCase() + str.slice(1)
 
 const safeStringify = (value: any): string => {
   // Early return for string primitives bypasses coercion and try/catch overhead.
   // Microbenchmarks show this simple bypass is ~8.5x faster for strings (~97ms down to ~11.5ms for 10M ops).
-  if (typeof value === 'string') return value;
+  if (typeof value === "string") return value
   try {
     return String(value)
   } catch (err) {
@@ -101,7 +102,7 @@ export const handleLogform = (
     const messageEmbed = new MessageEmbed()
     const logMessageParts: string[] = []
     const color = level
-      ? LogLevelToColor[level as LogLevel] ?? "DEFAULT"
+      ? (LogLevelToColor[level as LogLevel] ?? "DEFAULT")
       : "DEFAULT"
     messageEmbed.setColor(color)
     let fields: string[]
@@ -118,8 +119,8 @@ export const handleLogform = (
     // - Total fields: 25
     // - Total embed characters: 6000
     // Discord Message Content Limit: 2000 characters
-    let fieldCount = 0;
-    let totalEmbedLength = 0;
+    let fieldCount = 0
+    let totalEmbedLength = 0
 
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
@@ -150,7 +151,10 @@ export const handleLogform = (
               break
             } else {
               // Truncate the value to fit the remaining space
-              truncatedValue = truncatedValue.substring(0, availableSpace - truncatedName.length)
+              truncatedValue = truncatedValue.substring(
+                0,
+                availableSpace - truncatedName.length
+              )
             }
           }
 

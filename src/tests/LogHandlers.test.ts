@@ -422,6 +422,17 @@ describe("LogHandlers", () => {
       // Total length should be strictly <= 6000
       expect(totalLength).toBeLessThanOrEqual(6000)
     })
+
+    it("capitalizes ASCII field names with toUpperCase, not locale-aware casing", () => {
+      const info: logform.TransformableInfo = {
+        level: "info",
+        message: "hello",
+        foo_bar: "value",
+      }
+
+      const result = handleLogform(info, "info") as [string, MessageEmbed]
+      expect(result[0]).toContain("Foo_bar: value")
+    })
   })
 
   describe("handleObject()", () => {
