@@ -1,6 +1,6 @@
 {
   "author": "Robert Smieja",
-  "bugs": "https://github.com/robbot-discord/winston-discordjs/issues",
+  "bugs": "https://github.com/robertsmieja/winston-discordjs/issues",
   "dependencies": {
     "@types/ws": "^8.18.1",
     "logform": "^2.7.0",
@@ -76,7 +76,7 @@
     "ws": "^8.21.3",
     "esbuild": "^0.28.0"
   },
-  "packageManager": "npm@11.13.0",
+  "packageManager": "pnpm@11.24.0",
   "publishConfig": {
     "access": "public",
     "provenance": true

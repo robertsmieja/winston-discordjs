@@ -1,0 +1,11 @@
+# Prefer the highest satisfying versions, but never younger than 24h
+# (freshly-published releases need to sit untouched for at least a day)
+resolutionMode: highest
+minimumReleaseAge: 1440 # minutes == 24 hours
+minimumReleaseAgeExclude:
+  # our own deps we want immediately even if young
+  # (currently none)
+
+# Build-script approvals (pnpm v11) — packages whose postinstall we trust
+allowBuilds:
+  esbuild: true

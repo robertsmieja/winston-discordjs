@@ -9,7 +9,7 @@ These instructions apply to the entire repository. Follow maintainer and user in
 `winston-discordjs` is a TypeScript Winston transport that sends logs through Discord.js.
 
 - Runtime: Node.js 20 or newer
-- Package manager: npm; `package-lock.json` is authoritative
+- Package manager: pnpm, pinned via Corepack (`packageManager` in `package.json`); `pnpm-lock.yaml` is authoritative
 - Public entry point: `src/index.ts`
 - Discord compatibility: preserve the declared Discord.js v13 peer dependency unless a task explicitly changes the supported major version
 - Build output: CommonJS JavaScript and TypeScript declarations in `dist/`
