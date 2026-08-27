@@ -2,6 +2,7 @@
 
 ![npm](https://img.shields.io/npm/v/winston-discordjs)
 [![Actions Status](https://github.com/robertsmieja/winston-discordjs/actions/workflows/nodejs.yml/badge.svg)](https://github.com/robertsmieja/winston-discordjs/actions)
+[![Release](https://github.com/robertsmieja/winston-discordjs/actions/workflows/release.yml/badge.svg)](https://github.com/robertsmieja/winston-discordjs/actions/workflows/release.yml)
 [![codecov](https://codecov.io/gh/robertsmieja/winston-discordjs/branch/master/graph/badge.svg)](https://codecov.io/gh/robertsmieja/winston-discordjs)
 [![Known Vulnerabilities](https://snyk.io/test/github/robertsmieja/winston-discordjs/badge.svg?targetFile=package.json)](https://snyk.io/test/github/robertsmieja/winston-discordjs?targetFile=package.json)
 
