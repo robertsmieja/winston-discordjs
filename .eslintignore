@@ -1,6 +1,0 @@
-# Transpiled output
-dist/
-lib/
-
-# Webpack config files
-webpack.config*.js
