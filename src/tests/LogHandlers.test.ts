@@ -47,12 +47,37 @@ describe("LogHandlers", () => {
       expect(isTransformableInfo(0)).toBe(false)
     })
 
+    it("handles non-zero numbers", () => {
+      expect(isTransformableInfo(123)).toBe(false)
+    })
+
     it("handles false", () => {
       expect(isTransformableInfo(false)).toBe(false)
     })
 
+    it("handles true", () => {
+      expect(isTransformableInfo(true)).toBe(false)
+    })
+
     it(`handles ""`, () => {
       expect(isTransformableInfo("")).toBe(false)
+    })
+
+    it(`handles non-empty strings`, () => {
+      expect(isTransformableInfo("hello")).toBe(false)
+    })
+
+    it("handles throwing membership traps", () => {
+      const throwingProxy = new Proxy(
+        {},
+        {
+          has: () => {
+            throw new Error("has boom")
+          },
+        }
+      )
+
+      expect(isTransformableInfo(throwingProxy)).toBe(false)
     })
 
     it("handles an empty object", () => {
@@ -95,6 +120,12 @@ describe("LogHandlers", () => {
 
     it("handles number", () => {
       expect(handlePrimitive(42)).toBe("42")
+    })
+
+    it("truncates large strings to 2000 characters", () => {
+      const longString = "A".repeat(3000)
+      const result = handlePrimitive(longString)
+      expect(result.length).toBe(2000)
     })
   })
 
@@ -449,6 +480,12 @@ describe("LogHandlers", () => {
       expect(handleObject(errorWithStack)).toBe(errorWithStack.stack)
     })
 
+    it("handles Errors where stack is not a string", () => {
+      const errorWithStack = new Error("error message")
+      ;(errorWithStack as any).stack = 123
+      expect(handleObject(errorWithStack)).toBe("123")
+    })
+
     it("handles objects with a toString() function", () => {
       expect(
         handleObject({
@@ -457,6 +494,15 @@ describe("LogHandlers", () => {
           },
         })
       ).toBe("Hello World!")
+    })
+
+    it("handles objects where toString() does not return a string", () => {
+      const result = handleObject({
+        toString: function () {
+          return 123
+        },
+      })
+      expect(result).toBe("123")
     })
 
     it("handles objects with a toJSON() function", () => {
@@ -468,6 +514,13 @@ describe("LogHandlers", () => {
           },
         })
       ).toBe(`{"hello":"world"}`)
+    })
+
+    it("handles objects where JSON.stringify() returns undefined", () => {
+      const result = handleObject(function () {
+        return
+      })
+      expect(result).toBeUndefined()
     })
 
     it("handles objects with a toString() and a toJSON() function", () => {
@@ -494,10 +547,64 @@ describe("LogHandlers", () => {
       expect(handleObject(testObject)).toBe(JSON.stringify(testObject))
     })
 
+    it("handles objects with a toString property that throws", () => {
+      const testObject = {
+        toString: () => {
+          throw new Error("Throw in toString")
+        },
+      }
+      expect(handleObject(testObject)).toBe(JSON.stringify(testObject))
+    })
+
+    it("handles objects with a toString property that throws and a toJSON property that throws", () => {
+      const testObject = {
+        toString: () => {
+          throw new Error("Throw in toString")
+        },
+        toJSON: () => {
+          throw new Error("Throw in toJSON")
+        },
+      }
+      expect(handleObject(testObject)).toBe("[object Object]")
+    })
+
+    it("handles objects with a toString property that throws and a circular reference", () => {
+      const testObject: any = {
+        toString: () => {
+          throw new Error("Throw in toString")
+        },
+      }
+      testObject.testObject = testObject
+      expect(handleObject(testObject)).toBe("[object Object]")
+    })
+
     it("handles circular objects without throwing", () => {
       const testObject: any = Object.create(null)
       testObject.myself = testObject
       expect(handleObject(testObject)).toBe("[object Object]")
+    })
+
+    it("truncates Errors with stack to 2000 characters", () => {
+      const errorWithStack = new Error("error message")
+      errorWithStack.stack = "A".repeat(3000)
+      const result = handleObject(errorWithStack) as string
+      expect(result.length).toBe(2000)
+    })
+
+    it("truncates objects with a toString() function to 2000 characters", () => {
+      const result = handleObject({
+        toString: function () {
+          return "A".repeat(3000)
+        },
+      }) as string
+      expect(result.length).toBe(2000)
+    })
+
+    it("truncates objects stringified with JSON to 2000 characters", () => {
+      const result = handleObject({
+        a: "A".repeat(3000),
+      }) as string
+      expect(result.length).toBe(2000)
     })
   })
 
@@ -510,10 +617,60 @@ describe("LogHandlers", () => {
       expect(handleInfo(() => false)).toBe("false")
     })
 
+    it("falls back to JSON when reading toString throws", () => {
+      const throwingGetter = Object.defineProperty({}, "toString", {
+        get: () => {
+          throw new Error("getter boom")
+        },
+      })
+
+      expect(handleInfo(throwingGetter)).toBe("{}")
+    })
+
+    it("falls back to JSON when object membership checks throw", () => {
+      const throwingProxy = new Proxy(
+        {},
+        {
+          has: () => {
+            throw new Error("has boom")
+          },
+        }
+      )
+
+      expect(handleInfo(throwingProxy)).toBe("{}")
+    })
+
+    it("ignores logform values when key enumeration throws", () => {
+      const throwingProxy = new Proxy(
+        { level: "info", message: "hello" },
+        {
+          ownKeys: () => {
+            throw new Error("ownKeys boom")
+          },
+        }
+      )
+
+      expect(handleInfo(throwingProxy)).toBeUndefined()
+    })
+
+    it("skips logform fields whose getters throw", () => {
+      const throwingGetter = {
+        level: "info",
+        get message(): string {
+          throw new Error("message boom")
+        },
+      }
+
+      expect(handleInfo(throwingGetter)).toEqual([
+        "Level: info",
+        expect.any(MessageEmbed),
+      ])
+    })
+
     it("handles object", () => {
       const testObject = { someProperty: "someValue" }
 
-      expect(handleInfo(testObject)).toBe(testObject.toString())
+      expect(handleInfo(testObject)).toBe(JSON.stringify(testObject))
     })
   })
 })
