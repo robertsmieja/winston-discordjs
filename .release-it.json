@@ -17,7 +17,7 @@
     }
   },
   "hooks": {
-    "before:init": ["npm run test", "npm run lint"],
-    "after:bump": "npm run build"
+    "before:init": ["pnpm run test", "pnpm run lint"],
+    "after:bump": "pnpm run build"
   }
 }

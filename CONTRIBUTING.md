@@ -13,13 +13,13 @@ For bug fixes:
 ## Building
 
 ```shell script
-npm run build
+pnpm run build
 ```
 
 ## Testing
 
 ```shell script
-npm run test
+pnpm test
 ```
 
 ## Dependencies
@@ -29,7 +29,8 @@ npm run test
 
 ## Development
 
+- pnpm
 - ESLint
-- Jest (w/ Babel)
+- Vitest
 - Prettier
 - TypeScript

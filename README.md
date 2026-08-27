@@ -57,7 +57,7 @@ Releases are handled automatically using `release-it`.
 
 To trigger a release manually from your machine:
 ```bash
-npm run release
+pnpm run release
 ```
 
 Alternatively, you can trigger a release using the **GitHub Actions** workflow:
