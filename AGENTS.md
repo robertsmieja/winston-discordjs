@@ -8,8 +8,8 @@ These instructions apply to the entire repository. Follow maintainer and user in
 
 `winston-discordjs` is a TypeScript Winston transport that sends logs through Discord.js.
 
-- Runtime: Node.js 20 or newer
-- Package manager: pnpm, pinned via Corepack (`packageManager` in `package.json`); `pnpm-lock.yaml` is authoritative
+- Runtime: Node.js 22 or newer (Node 20 reached EOL in April 2026)
+- Package manager: pnpm, pinned via `packageManager` in `package.json` (CI provisions it with `pnpm/action-setup`, SHA-pinned); `pnpm-lock.yaml` is authoritative
 - Public entry point: `src/index.ts`
 - Discord compatibility: preserve the declared Discord.js v13 peer dependency unless a task explicitly changes the supported major version
 - Build output: CommonJS JavaScript and TypeScript declarations in `dist/`
@@ -22,43 +22,43 @@ These instructions apply to the entire repository. Follow maintainer and user in
 - `src/index.ts` — package export
 - `src/tests/` — Vitest unit and regression tests, grouped by source module
 - `.github/workflows/` — CI and security workflows
-- `package.json` / `package-lock.json` — scripts and reproducible dependency graph
+- `package.json` / `pnpm-lock.yaml` / `pnpm-workspace.yaml` — scripts and reproducible dependency graph
 - `vitest.config.ts` — test environment and enforced coverage thresholds
 
 Do not edit generated or local-only paths such as `node_modules/`, `dist/`, or `coverage/` unless a task explicitly requires generated artifacts.
 
 ## Setup and Commands
 
-Install exactly from the lockfile:
+Install exactly from the lockfile (frozen; CI uses this):
 
 ```sh
-npm ci
+pnpm install --frozen-lockfile
 ```
 
 Use the repository scripts rather than ad hoc equivalents:
 
 ```sh
-npm test            # Vitest suite with coverage thresholds
-npm run typecheck   # TypeScript validation without emitting files
-npm run lint        # ESLint and Prettier rules
-npm run build       # JavaScript bundle, declarations, and lint
-npm run check       # Lint and typecheck
-npm run clean       # Remove dist/
+pnpm test           # Vitest suite with coverage thresholds
+pnpm run typecheck  # TypeScript validation without emitting files
+pnpm run lint       # ESLint and Prettier rules
+pnpm run build      # JavaScript bundle, declarations, and lint
+pnpm run check      # Lint and typecheck
+pnpm run clean      # Remove dist/
 ```
 
 For a focused test while iterating:
 
 ```sh
-npx vitest run src/tests/LogHandlers.test.ts --coverage=false
+pnpm exec vitest run src/tests/LogHandlers.test.ts --coverage=false
 ```
 
 Before handing off a code change, run at minimum:
 
 ```sh
-npm test
-npm run typecheck
-npm run lint
-npm run build
+pnpm test
+pnpm run typecheck
+pnpm run lint
+pnpm run build
 git diff --check
 ```
 
@@ -81,15 +81,16 @@ git diff --check
 - Use Vitest APIs directly and import every helper or type used by a test.
 - Keep mocks faithful to Discord.js v13 signatures, especially Promise-returning methods.
 - Do not reduce coverage thresholds to make a change pass. Add meaningful tests or correct the implementation.
-- Run both `npm test` and `npm run typecheck` after changing tests.
+- Run both `pnpm test` and `pnpm run typecheck` after changing tests.
 
 ## Dependencies and Lockfiles
 
-- Use npm for dependency changes; do not introduce additional package-manager lockfiles.
-- Update `package.json` and `package-lock.json` together.
+- Use pnpm for dependency changes; retain only `pnpm-lock.yaml` (no `package-lock.json`).
+- Update `package.json` and `pnpm-lock.yaml` together (via `pnpm add` / `pnpm install`).
 - Prefer the smallest compatible dependency update and avoid unrelated lockfile churn.
-- Verify dependency changes with a clean `npm ci` before committing.
-- CI uses `npm ci`; a locally passing `npm install` is not sufficient evidence that the lockfile is valid.
+- Verify dependency changes with a clean `pnpm install --frozen-lockfile` before committing.
+- CI uses `pnpm install --frozen-lockfile`; a locally passing `pnpm install` is not sufficient evidence that the lockfile is valid.
+- `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440`: packages younger than 24 hours are deliberately not adopted. Pull fresh versions explicitly (e.g. `pnpm update`) when the delay is meant to be overridden.
 
 ## Git and Pull Requests
 
