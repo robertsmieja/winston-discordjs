@@ -8,7 +8,7 @@ These instructions apply to the entire repository. Follow maintainer and user in
 
 `winston-discordjs` is a TypeScript Winston transport that sends logs through Discord.js.
 
-- Runtime: Node.js 22 or newer (Node 20 reached EOL in April 2026)
+- Runtime: Node.js 22 or newer
 - Package manager: pnpm, pinned via `packageManager` in `package.json` (CI provisions it with `pnpm/action-setup`, SHA-pinned); `pnpm-lock.yaml` is authoritative
 - Public entry point: `src/index.ts`
 - Discord compatibility: preserve the declared Discord.js v13 peer dependency unless a task explicitly changes the supported major version
@@ -86,11 +86,12 @@ git diff --check
 ## Dependencies and Lockfiles
 
 - Use pnpm for dependency changes; retain only `pnpm-lock.yaml` (no `package-lock.json`).
+- Default to `pnpm install --frozen-lockfile`; use lockfile-mutating commands only for explicit dependency work.
 - Update `package.json` and `pnpm-lock.yaml` together (via `pnpm add` / `pnpm install`).
 - Prefer the smallest compatible dependency update and avoid unrelated lockfile churn.
 - Verify dependency changes with a clean `pnpm install --frozen-lockfile` before committing.
 - CI uses `pnpm install --frozen-lockfile`; a locally passing `pnpm install` is not sufficient evidence that the lockfile is valid.
-- `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440`: packages younger than 24 hours are deliberately not adopted. Pull fresh versions explicitly (e.g. `pnpm update`) when the delay is meant to be overridden.
+- `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440`: packages younger than 24 hours must never be adopted, including during explicit dependency work. Never ignore, disable, or override this supply-chain security policy; wait until a release is old enough instead.
 
 ## Git and Pull Requests
 
