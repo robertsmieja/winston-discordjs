@@ -39,9 +39,17 @@ export interface DiscordTransportStreamOptions
   extends Transport.TransportStreamOptions {
   discordClient?: Client
   discordToken?: string
-  discordChannel?: TextChannel
+  discordChannel?: string | TextChannel
+  intents?: BitFieldResolvable<IntentsString, number>
+  maxLazyLogDepth?: number | null
 }
 ```
+
+`maxLazyLogDepth` controls how many nested lazy log functions may be invoked.
+It defaults to `16`. Set it to `0` to reject function-valued logs without
+invoking them, or to `null` to restore the previous unlimited behavior. An
+unlimited depth can exhaust the call stack if a function never resolves to a
+non-function value.
 
 Ideally a `TextChannel` is passed in, from an existing `Discord.Client`.
 Otherwise, the transport expects a Channel ID as a `string`
@@ -56,11 +64,13 @@ If an ID is passed in, the Transport requires a `Discord.Client`:
 Releases are handled automatically using `release-it`.
 
 To trigger a release manually from your machine:
+
 ```bash
 pnpm run release
 ```
 
 Alternatively, you can trigger a release using the **GitHub Actions** workflow:
+
 1. Go to the **Actions** tab in GitHub.
 2. Select the **Release** workflow.
 3. Click **Run workflow**, choose your release type (patch, minor, major), and run it.

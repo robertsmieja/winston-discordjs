@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import {
   isTransformableInfo,
   handlePrimitive,
@@ -433,6 +433,26 @@ describe("LogHandlers", () => {
       const result = handleLogform(info, "info") as [string, MessageEmbed]
       expect(result[0]).toContain("Foo_bar: value")
     })
+
+    it("preserves false and zero field values", () => {
+      const result = handleLogform(
+        { level: "info", message: "hello", enabled: false, attempts: 0 },
+        "info"
+      ) as [string, MessageEmbed]
+
+      expect(result[0]).toContain("Enabled: false")
+      expect(result[0]).toContain("Attempts: 0")
+      expect(result[1].fields).toContainEqual({
+        name: "Enabled",
+        value: "false",
+        inline: true,
+      })
+      expect(result[1].fields).toContainEqual({
+        name: "Attempts",
+        value: "0",
+        inline: true,
+      })
+    })
   })
 
   describe("handleObject()", () => {
@@ -477,6 +497,35 @@ describe("LogHandlers", () => {
           undefined
         )
       ).toEqual(expectedValue)
+    })
+
+    it("suppresses output when a format filters the log", () => {
+      const filter = logform.format(() => false)()
+
+      expect(handleObject(transformableInfo, filter)).toBeUndefined()
+    })
+
+    it("fails closed when a format throws", () => {
+      const fakeError = new Error("format failed")
+      const throwingFormat = logform.format(() => {
+        throw fakeError
+      })()
+      const onError = vi.fn()
+
+      expect(
+        handleObject(transformableInfo, throwingFormat, undefined, onError)
+      ).toBeUndefined()
+      expect(onError).toHaveBeenCalledWith(fakeError)
+    })
+
+    it("serializes a plain object returned by a formatter", () => {
+      const objectFormat = logform.format(
+        () => ({ formatted: "value" }) as logform.TransformableInfo
+      )()
+
+      expect(handleObject(transformableInfo, objectFormat)).toBe(
+        '{"formatted":"value"}'
+      )
     })
 
     it("handles Errors without stack", () => {
@@ -627,6 +676,92 @@ describe("LogHandlers", () => {
     it("handles functions that returns boolean", () => {
       expect(handleInfo(() => false)).toBe("false")
     })
+
+    it("does not throw when a lazy log function throws", () => {
+      expect(
+        handleInfo(() => {
+          throw new Error("lazy log failed")
+        })
+      ).toBeUndefined()
+    })
+
+    it("stops self-returning lazy log functions", () => {
+      const recursive = (): typeof recursive => recursive
+      const onError = vi.fn()
+
+      expect(handleInfo(recursive, undefined, undefined, onError)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
+    })
+
+    it("honors a custom lazy log depth", () => {
+      let calls = 0
+      const recursive = (): typeof recursive => {
+        calls++
+        return recursive
+      }
+      const onError = vi.fn()
+
+      expect(handleInfo(recursive, undefined, undefined, onError, 2)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(calls).toBe(2)
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
+    })
+
+    it("preserves the lazy log depth across formatter output", () => {
+      let calls = 0
+      const recursive = (): typeof recursive => {
+        calls++
+        return recursive
+      }
+      const format = {
+        transform: vi.fn(() => recursive),
+      } as unknown as logform.Format
+      const onError = vi.fn()
+
+      expect(handleInfo(transformableInfo, format, undefined, onError, 2)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(calls).toBe(2)
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
+    })
+
+    it("rejects lazy log functions before invocation when the depth is zero", () => {
+      const lazyLog = vi.fn(() => "sensitive")
+      const onError = vi.fn()
+
+      expect(handleInfo(lazyLog, undefined, undefined, onError, 0)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(lazyLog).not.toHaveBeenCalled()
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
+    })
+
+    it("allows unlimited lazy log depth when configured with null", () => {
+      const nestedLazyLog = (remaining: number): unknown =>
+        remaining === 0 ? "resolved" : () => nestedLazyLog(remaining - 1)
+
+      expect(
+        handleInfo(nestedLazyLog(20), undefined, undefined, undefined, null)
+      ).toBe("resolved")
+    })
+
+    it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+      "rejects invalid lazy log depth %s",
+      (maxLazyLogDepth) => {
+        expect(() =>
+          handleInfo(
+            () => "message",
+            undefined,
+            undefined,
+            undefined,
+            maxLazyLogDepth
+          )
+        ).toThrow(RangeError)
+      }
+    )
 
     it("falls back to JSON when reading toString throws", () => {
       const throwingGetter = Object.defineProperty({}, "toString", {

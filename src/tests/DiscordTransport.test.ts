@@ -3,6 +3,7 @@ import DiscordTransport, {
   DiscordTransportStreamOptions,
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
+import * as logform from "logform"
 
 vi.mock("discord.js")
 
@@ -25,13 +26,28 @@ describe("DiscordTransport", () => {
       expect(transport.discordClient).toBeUndefined()
     })
 
+    it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+      "rejects invalid maxLazyLogDepth %s",
+      (maxLazyLogDepth) => {
+        expect(() => new DiscordTransport({ maxLazyLogDepth })).toThrow(
+          RangeError
+        )
+      }
+    )
+
+    it("accepts null as an unlimited lazy log depth", () => {
+      expect(new DiscordTransport({ maxLazyLogDepth: null })).toBeDefined()
+    })
+
     it("handles Discord API Token successfully", () => {
       const options: DiscordTransportStreamOptions = {
         discordToken: "EXAMPLE_API_TOKEN",
         discordChannel: "12345",
       }
 
-      const fakeChannelManager = {} as Partial<Discord.ChannelManager>
+      const fakeChannelManager = {
+        fetch: vi.fn(() => Promise.resolve(null)),
+      } as Partial<Discord.ChannelManager>
 
       const fakeDiscordClient = {
         login: vi.fn(() => Promise.resolve("token")),
@@ -61,6 +77,55 @@ describe("DiscordTransport", () => {
       expect(mockedLogin).toHaveBeenCalledWith(options.discordToken)
       expect(mockedOn).toHaveBeenCalledTimes(1)
       expect(mockedOn).toHaveBeenCalledWith("error", expect.any(Function))
+      expect(fakeChannelManager.fetch).toHaveBeenCalledWith("12345")
+    })
+
+    it("resolves a channel ID and delivers logs queued during the fetch", async () => {
+      let resolveChannel!: (channel: Discord.TextChannel) => void
+      const channelPromise = new Promise<Discord.TextChannel>((resolve) => {
+        resolveChannel = resolve
+      })
+      const send = vi.fn(async () => ({}))
+      const channel = Object.create(
+        Discord.TextChannel.prototype
+      ) as Discord.TextChannel
+      channel.send = send as Discord.TextChannel["send"]
+      const client = {
+        channels: { fetch: vi.fn(() => channelPromise) },
+        destroy: vi.fn(),
+      } as unknown as Discord.Client
+
+      const transport = new DiscordTransport({
+        discordClient: client,
+        discordChannel: "12345",
+      })
+      transport.log("queued log")
+      resolveChannel(channel)
+
+      await vi.waitFor(() => {
+        expect(send).toHaveBeenCalledWith({
+          content: "queued log",
+          allowedMentions: { parse: [] },
+        })
+      })
+      expect(client.channels.fetch).toHaveBeenCalledWith("12345")
+    })
+
+    it("emits warn when resolving a channel ID fails", async () => {
+      const fakeError = new Error("channel fetch failed")
+      const client = {
+        channels: { fetch: vi.fn(() => Promise.reject(fakeError)) },
+      } as unknown as Discord.Client
+      const transport = new DiscordTransport({
+        discordClient: client,
+        discordChannel: "12345",
+      })
+      const warn = vi.fn()
+      transport.on("warn", warn)
+
+      await vi.waitFor(() => {
+        expect(warn).toHaveBeenCalledWith(fakeError)
+      })
     })
 
     it("emits warn when Discord login rejects", async () => {
@@ -177,6 +242,54 @@ describe("DiscordTransport", () => {
       })
     })
 
+    it.each([
+      [false, "false"],
+      [0, "0"],
+    ])("sends the falsy primitive %j", (value, expectedContent) => {
+      const send = vi.fn(async () => ({}))
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+
+      transport.log(value)
+
+      expect(send).toHaveBeenCalledWith({
+        content: expectedContent,
+        allowedMentions: { parse: [] },
+      })
+    })
+
+    it("rejects lazy log functions before invocation when configured with zero", () => {
+      const send = vi.fn(async () => ({}))
+      const lazyLog = vi.fn(() => "sensitive")
+      const warn = vi.fn()
+      transport = new DiscordTransport({ maxLazyLogDepth: 0 })
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+      transport.on("warn", warn)
+
+      transport.log(lazyLog)
+
+      expect(lazyLog).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledWith(expect.any(RangeError))
+      expect(send).toHaveBeenCalledWith({
+        content: "[Lazy log depth limit exceeded]",
+        allowedMentions: { parse: [] },
+      })
+    })
+
+    it("allows unlimited lazy log depth when configured with null", () => {
+      const send = vi.fn(async () => ({}))
+      const nestedLazyLog = (remaining: number): unknown =>
+        remaining === 0 ? "resolved" : () => nestedLazyLog(remaining - 1)
+      transport = new DiscordTransport({ maxLazyLogDepth: null })
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+
+      transport.log(nestedLazyLog(20))
+
+      expect(send).toHaveBeenCalledWith({
+        content: "resolved",
+        allowedMentions: { parse: [] },
+      })
+    })
+
     it("sends custom object output as string content", () => {
       const fakeDiscordChannel = {
         send: vi.fn(async () => {
@@ -245,6 +358,36 @@ describe("DiscordTransport", () => {
       })
     })
 
+    it("handles a synchronous send() error", () => {
+      const fakeError = new Error("sync send error")
+      const send = vi.fn(() => {
+        throw fakeError
+      })
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+      const warn = vi.fn()
+      transport.on("warn", warn)
+
+      expect(() => transport.log("log me!")).not.toThrow()
+      expect(warn).toHaveBeenCalledWith(fakeError)
+    })
+
+    it("emits warn and suppresses output when a formatter throws", () => {
+      const fakeError = new Error("format failed")
+      const format = logform.format(() => {
+        throw fakeError
+      })()
+      const send = vi.fn(async () => ({}))
+      transport = new DiscordTransport({ format })
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+      const warn = vi.fn()
+      transport.on("warn", warn)
+
+      transport.log({ level: "info", message: "sensitive" })
+
+      expect(warn).toHaveBeenCalledWith(fakeError)
+      expect(send).not.toHaveBeenCalled()
+    })
+
     it("handles (string, () => {})) correctly", () => {
       const callback = vi.fn()
 
@@ -299,14 +442,68 @@ describe("DiscordTransport", () => {
       beforeEach(() => {
         transport = new DiscordTransport()
       })
-      it("destroys discordClient if defined", () => {
-        const mockClient = new Discord.Client({ intents: [] })
-        mockClient.destroy = vi.fn()
+      it("destroys a client created by the transport", () => {
+        const destroy = vi.fn()
+        vi.spyOn(Discord, "Client").mockImplementationOnce(function (
+          this: any
+        ) {
+          this.login = vi.fn(() => Promise.resolve("token"))
+          this.on = vi.fn()
+          this.destroy = destroy
+          return this
+        } as any)
 
-        transport.discordClient = mockClient
+        transport = new DiscordTransport({ discordToken: "token" })
         transport.close()
 
-        expect(mockClient.destroy).toHaveBeenCalledTimes(1)
+        expect(destroy).toHaveBeenCalledTimes(1)
+      })
+
+      it("does not destroy a caller-owned client", () => {
+        const client = {
+          destroy: vi.fn(),
+        } as unknown as Discord.Client
+
+        transport = new DiscordTransport({ discordClient: client })
+        transport.close()
+
+        expect(client.destroy).not.toHaveBeenCalled()
+      })
+
+      it("does not send queued logs after close", async () => {
+        let resolveChannel!: (channel: Discord.TextChannel) => void
+        const channelPromise = new Promise<Discord.TextChannel>((resolve) => {
+          resolveChannel = resolve
+        })
+        const send = vi.fn(async () => ({}))
+        const channel = Object.create(
+          Discord.TextChannel.prototype
+        ) as Discord.TextChannel
+        channel.send = send as Discord.TextChannel["send"]
+        const destroy = vi.fn()
+
+        vi.spyOn(Discord, "Client").mockImplementationOnce(function (
+          this: any
+        ) {
+          this.login = vi.fn(() => Promise.resolve("token"))
+          this.on = vi.fn()
+          this.destroy = destroy
+          this.channels = { fetch: vi.fn(() => channelPromise) }
+          return this
+        } as any)
+
+        transport = new DiscordTransport({
+          discordToken: "token",
+          discordChannel: "12345",
+        })
+        transport.log("queued log")
+        transport.close()
+        resolveChannel(channel)
+        await channelPromise
+        await Promise.resolve()
+
+        expect(destroy).toHaveBeenCalledTimes(1)
+        expect(send).not.toHaveBeenCalled()
       })
 
       it("handles undefined discordClient", () => {
