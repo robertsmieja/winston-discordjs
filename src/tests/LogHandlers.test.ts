@@ -433,6 +433,26 @@ describe("LogHandlers", () => {
       const result = handleLogform(info, "info") as [string, MessageEmbed]
       expect(result[0]).toContain("Foo_bar: value")
     })
+
+    it("preserves false and zero field values", () => {
+      const result = handleLogform(
+        { level: "info", message: "hello", enabled: false, attempts: 0 },
+        "info"
+      ) as [string, MessageEmbed]
+
+      expect(result[0]).toContain("Enabled: false")
+      expect(result[0]).toContain("Attempts: 0")
+      expect(result[1].fields).toContainEqual({
+        name: "Enabled",
+        value: "false",
+        inline: true,
+      })
+      expect(result[1].fields).toContainEqual({
+        name: "Attempts",
+        value: "0",
+        inline: true,
+      })
+    })
   })
 
   describe("handleObject()", () => {
@@ -477,6 +497,20 @@ describe("LogHandlers", () => {
           undefined
         )
       ).toEqual(expectedValue)
+    })
+
+    it("suppresses output when a format filters the log", () => {
+      const filter = logform.format(() => false)()
+
+      expect(handleObject(transformableInfo, filter)).toBeUndefined()
+    })
+
+    it("fails closed when a format throws", () => {
+      const throwingFormat = logform.format(() => {
+        throw new Error("format failed")
+      })()
+
+      expect(handleObject(transformableInfo, throwingFormat)).toBeUndefined()
     })
 
     it("handles Errors without stack", () => {
@@ -626,6 +660,20 @@ describe("LogHandlers", () => {
 
     it("handles functions that returns boolean", () => {
       expect(handleInfo(() => false)).toBe("false")
+    })
+
+    it("does not throw when a lazy log function throws", () => {
+      expect(
+        handleInfo(() => {
+          throw new Error("lazy log failed")
+        })
+      ).toBeUndefined()
+    })
+
+    it("stops self-returning lazy log functions", () => {
+      const recursive = (): typeof recursive => recursive
+
+      expect(handleInfo(recursive)).toBeUndefined()
     })
 
     it("falls back to JSON when reading toString throws", () => {

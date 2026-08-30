@@ -19,6 +19,8 @@ export interface DiscordTransportStreamOptions
 export class DiscordTransport extends TransportStream {
   discordChannel?: TextChannel
   discordClient?: Client
+  private discordChannelPromise?: Promise<TextChannel | undefined>
+  private ownsDiscordClient = false
 
   constructor(opts?: DiscordTransportStreamOptions) {
     super(opts)
@@ -30,6 +32,7 @@ export class DiscordTransport extends TransportStream {
       } else {
         if (discordToken) {
           this.discordClient = new Client({ intents })
+          this.ownsDiscordClient = true
           this.discordClient.on("error", (error) => {
             this.emit("warn", error)
           })
@@ -41,7 +44,54 @@ export class DiscordTransport extends TransportStream {
 
       if (discordChannel && discordChannel instanceof TextChannel) {
         this.discordChannel = discordChannel
+      } else if (typeof discordChannel === "string" && this.discordClient) {
+        this.discordChannelPromise = this.discordClient.channels
+          .fetch(discordChannel)
+          .then((channel) => {
+            if (channel instanceof TextChannel) {
+              this.discordChannel = channel
+              return channel
+            }
+
+            this.emit(
+              "warn",
+              new TypeError(`Discord channel ${discordChannel} is not a text channel`)
+            )
+            return undefined
+          })
+          .catch((error) => {
+            this.emit("warn", error)
+            return undefined
+          })
       }
+    }
+  }
+
+  private send(
+    channel: TextChannel,
+    logMessage: Exclude<ReturnType<typeof handleInfo>, undefined>
+  ): void {
+    try {
+      let messagePromise: Promise<Message>
+      if (Array.isArray(logMessage)) {
+        const content = logMessage[0]
+        const embed = logMessage[1]
+        messagePromise = channel.send({
+          content,
+          embeds: [embed],
+          allowedMentions: { parse: [] },
+        })
+      } else {
+        messagePromise = channel.send({
+          content: logMessage,
+          allowedMentions: { parse: [] },
+        })
+      }
+      void messagePromise.catch((error) => {
+        this.emit("warn", error)
+      })
+    } catch (error) {
+      this.emit("warn", error)
     }
   }
 
@@ -50,27 +100,20 @@ export class DiscordTransport extends TransportStream {
       this.emit("logged", info)
     })
 
-    if (!this.silent && info) {
-      const logMessage = handleInfo(info, this.format, this.level)
+    if (!this.silent && info !== undefined && info !== null) {
+      let logMessage: ReturnType<typeof handleInfo>
+      try {
+        logMessage = handleInfo(info, this.format, this.level)
+      } catch (error) {
+        this.emit("warn", error)
+        logMessage = undefined
+      }
 
       if (this.discordChannel && logMessage) {
-        let messagePromise: Promise<Message>
-        if (Array.isArray(logMessage)) {
-          const content = logMessage[0]
-          const embed = logMessage[1]
-          messagePromise = this.discordChannel.send({
-            content,
-            embeds: [embed],
-            allowedMentions: { parse: [] },
-          })
-        } else {
-          messagePromise = this.discordChannel.send({
-            content: logMessage,
-            allowedMentions: { parse: [] },
-          })
-        }
-        messagePromise.catch((error) => {
-          this.emit("warn", error)
+        this.send(this.discordChannel, logMessage)
+      } else if (this.discordChannelPromise && logMessage) {
+        void this.discordChannelPromise.then((channel) => {
+          if (channel) this.send(channel, logMessage)
         })
       }
     }
@@ -81,7 +124,7 @@ export class DiscordTransport extends TransportStream {
   }
 
   close(): void {
-    if (this.discordClient) {
+    if (this.discordClient && this.ownsDiscordClient) {
       this.discordClient.destroy()
     }
   }

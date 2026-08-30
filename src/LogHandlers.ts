@@ -87,6 +87,8 @@ const safeStringify = (value: any): string => {
   }
 }
 
+const MAX_LAZY_LOG_DEPTH = 16
+
 export const handleLogform = (
   info: TransformableInfo,
   level?: string
@@ -131,7 +133,7 @@ export const handleLogform = (
         continue
       }
 
-      if (value) {
+      if (value !== undefined && value !== null && value !== "") {
         const capitalizedField = capitalize(field)
         const stringifiedValue = safeStringify(value)
 
@@ -184,11 +186,21 @@ export const handleObject = (
 ): string | [string, MessageEmbed] | undefined => {
   if (isTransformableInfo(info)) {
     if (format) {
-      const formattedInfo = format.transform(info)
+      let formattedInfo: TransformableInfo | boolean
+      try {
+        formattedInfo = format.transform(info)
+      } catch {
+        // A formatter can touch hostile getters or proxies. Fail closed instead
+        // of emitting unformatted data that the formatter may have redacted.
+        return undefined
+      }
+
+      if (typeof formattedInfo === "boolean") return undefined
+
       if (isTransformableInfo(formattedInfo)) {
         return handleLogform(formattedInfo, level)
       } else {
-        return handlePrimitive(formattedInfo)
+        return handleInfo(formattedInfo, undefined, level)
       }
     } else {
       return handleLogform(info, level)
@@ -233,16 +245,30 @@ export const handleObject = (
   }
 }
 
-export const handleInfo = (
+const handleInfoAtDepth = (
   info: unknown,
   format?: Format,
-  level?: string
+  level?: string,
+  lazyLogDepth = 0
 ): string | [string, MessageEmbed] | undefined => {
   if (isPrimitive(info)) {
     return handlePrimitive(info)
   } else if (typeof info === "function") {
-    return handleInfo(info(), format, level)
+    if (lazyLogDepth >= MAX_LAZY_LOG_DEPTH) return undefined
+
+    try {
+      return handleInfoAtDepth(info(), format, level, lazyLogDepth + 1)
+    } catch {
+      return undefined
+    }
   } else {
     return handleObject(info, format, level)
   }
 }
+
+export const handleInfo = (
+  info: unknown,
+  format?: Format,
+  level?: string
+): string | [string, MessageEmbed] | undefined =>
+  handleInfoAtDepth(info, format, level, 0)
