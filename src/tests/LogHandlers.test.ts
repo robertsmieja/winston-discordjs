@@ -695,6 +695,74 @@ describe("LogHandlers", () => {
       expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
     })
 
+    it("honors a custom lazy log depth", () => {
+      let calls = 0
+      const recursive = (): typeof recursive => {
+        calls++
+        return recursive
+      }
+      const onError = vi.fn()
+
+      expect(handleInfo(recursive, undefined, undefined, onError, 2)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(calls).toBe(2)
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
+    })
+
+    it("preserves the lazy log depth across formatter output", () => {
+      let calls = 0
+      const recursive = (): typeof recursive => {
+        calls++
+        return recursive
+      }
+      const format = {
+        transform: vi.fn(() => recursive),
+      } as unknown as logform.Format
+      const onError = vi.fn()
+
+      expect(handleInfo(transformableInfo, format, undefined, onError, 2)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(calls).toBe(2)
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
+    })
+
+    it("rejects lazy log functions before invocation when the depth is zero", () => {
+      const lazyLog = vi.fn(() => "sensitive")
+      const onError = vi.fn()
+
+      expect(handleInfo(lazyLog, undefined, undefined, onError, 0)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(lazyLog).not.toHaveBeenCalled()
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
+    })
+
+    it("allows unlimited lazy log depth when configured with null", () => {
+      const nestedLazyLog = (remaining: number): unknown =>
+        remaining === 0 ? "resolved" : () => nestedLazyLog(remaining - 1)
+
+      expect(
+        handleInfo(nestedLazyLog(20), undefined, undefined, undefined, null)
+      ).toBe("resolved")
+    })
+
+    it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+      "rejects invalid lazy log depth %s",
+      (maxLazyLogDepth) => {
+        expect(() =>
+          handleInfo(
+            () => "message",
+            undefined,
+            undefined,
+            undefined,
+            maxLazyLogDepth
+          )
+        ).toThrow(RangeError)
+      }
+    )
+
     it("falls back to JSON when reading toString throws", () => {
       const throwingGetter = Object.defineProperty({}, "toString", {
         get: () => {

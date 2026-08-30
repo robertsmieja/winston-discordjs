@@ -6,7 +6,11 @@ import {
   Message,
 } from "discord.js"
 import TransportStream from "winston-transport"
-import { handleInfo } from "./LogHandlers"
+import {
+  DEFAULT_MAX_LAZY_LOG_DEPTH,
+  handleInfo,
+  validateMaxLazyLogDepth,
+} from "./LogHandlers"
 
 export interface DiscordTransportStreamOptions
   extends TransportStream.TransportStreamOptions {
@@ -14,17 +18,25 @@ export interface DiscordTransportStreamOptions
   discordToken?: string
   discordChannel?: string | TextChannel
   intents?: BitFieldResolvable<IntentsString, number>
+  maxLazyLogDepth?: number | null
 }
 
 export class DiscordTransport extends TransportStream {
   discordChannel?: TextChannel
   discordClient?: Client
   private discordChannelPromise?: Promise<TextChannel | undefined>
+  private readonly maxLazyLogDepth: number | null
   private ownsDiscordClient = false
   private transportClosed = false
 
   constructor(opts?: DiscordTransportStreamOptions) {
     super(opts)
+
+    this.maxLazyLogDepth = validateMaxLazyLogDepth(
+      opts?.maxLazyLogDepth === undefined
+        ? DEFAULT_MAX_LAZY_LOG_DEPTH
+        : opts.maxLazyLogDepth
+    )
 
     if (opts) {
       const { discordChannel, discordToken, intents = [] } = opts
@@ -56,7 +68,9 @@ export class DiscordTransport extends TransportStream {
 
             this.emit(
               "warn",
-              new TypeError(`Discord channel ${discordChannel} is not a text channel`)
+              new TypeError(
+                `Discord channel ${discordChannel} is not a text channel`
+              )
             )
             return undefined
           })
@@ -106,9 +120,15 @@ export class DiscordTransport extends TransportStream {
     if (!this.silent && info !== undefined && info !== null) {
       let logMessage: ReturnType<typeof handleInfo>
       try {
-        logMessage = handleInfo(info, this.format, this.level, (error) => {
-          this.emit("warn", error)
-        })
+        logMessage = handleInfo(
+          info,
+          this.format,
+          this.level,
+          (error) => {
+            this.emit("warn", error)
+          },
+          this.maxLazyLogDepth
+        )
       } catch (error) {
         this.emit("warn", error)
         logMessage = undefined

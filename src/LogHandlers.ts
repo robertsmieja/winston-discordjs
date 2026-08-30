@@ -87,10 +87,25 @@ const safeStringify = (value: any): string => {
   }
 }
 
-const MAX_LAZY_LOG_DEPTH = 16
+export const DEFAULT_MAX_LAZY_LOG_DEPTH = 16
 const LAZY_LOG_DEPTH_EXCEEDED = "[Lazy log depth limit exceeded]"
+const INVALID_MAX_LAZY_LOG_DEPTH =
+  "maxLazyLogDepth must be null or a non-negative safe integer"
 
 type HandleError = (error: unknown) => void
+
+export const validateMaxLazyLogDepth = (
+  maxLazyLogDepth: number | null
+): number | null => {
+  if (
+    maxLazyLogDepth !== null &&
+    (!Number.isSafeInteger(maxLazyLogDepth) || maxLazyLogDepth < 0)
+  ) {
+    throw new RangeError(INVALID_MAX_LAZY_LOG_DEPTH)
+  }
+
+  return maxLazyLogDepth
+}
 
 export const handleLogform = (
   info: TransformableInfo,
@@ -186,7 +201,9 @@ export const handleObject = (
   info: Exclude<any, Primitive>,
   format?: Format,
   level?: string,
-  onError?: HandleError
+  onError?: HandleError,
+  lazyLogDepth = 0,
+  maxLazyLogDepth: number | null = DEFAULT_MAX_LAZY_LOG_DEPTH
 ): string | [string, MessageEmbed] | undefined => {
   if (isTransformableInfo(info)) {
     if (format) {
@@ -205,7 +222,14 @@ export const handleObject = (
       if (isTransformableInfo(formattedInfo)) {
         return handleLogform(formattedInfo, level)
       } else {
-        return handleInfoAtDepth(formattedInfo, undefined, level, 0, onError)
+        return handleInfoAtDepth(
+          formattedInfo,
+          undefined,
+          level,
+          lazyLogDepth,
+          maxLazyLogDepth,
+          onError
+        )
       }
     } else {
       return handleLogform(info, level)
@@ -255,12 +279,13 @@ const handleInfoAtDepth = (
   format?: Format,
   level?: string,
   lazyLogDepth = 0,
+  maxLazyLogDepth: number | null = DEFAULT_MAX_LAZY_LOG_DEPTH,
   onError?: HandleError
 ): string | [string, MessageEmbed] | undefined => {
   if (isPrimitive(info)) {
     return handlePrimitive(info)
   } else if (typeof info === "function") {
-    if (lazyLogDepth >= MAX_LAZY_LOG_DEPTH) {
+    if (maxLazyLogDepth !== null && lazyLogDepth >= maxLazyLogDepth) {
       onError?.(new RangeError(LAZY_LOG_DEPTH_EXCEEDED))
       return LAZY_LOG_DEPTH_EXCEEDED
     }
@@ -271,6 +296,7 @@ const handleInfoAtDepth = (
         format,
         level,
         lazyLogDepth + 1,
+        maxLazyLogDepth,
         onError
       )
     } catch (error) {
@@ -278,7 +304,14 @@ const handleInfoAtDepth = (
       return undefined
     }
   } else {
-    return handleObject(info, format, level, onError)
+    return handleObject(
+      info,
+      format,
+      level,
+      onError,
+      lazyLogDepth,
+      maxLazyLogDepth
+    )
   }
 }
 
@@ -286,6 +319,10 @@ export const handleInfo = (
   info: unknown,
   format?: Format,
   level?: string,
-  onError?: HandleError
-): string | [string, MessageEmbed] | undefined =>
-  handleInfoAtDepth(info, format, level, 0, onError)
+  onError?: HandleError,
+  maxLazyLogDepth: number | null = DEFAULT_MAX_LAZY_LOG_DEPTH
+): string | [string, MessageEmbed] | undefined => {
+  validateMaxLazyLogDepth(maxLazyLogDepth)
+
+  return handleInfoAtDepth(info, format, level, 0, maxLazyLogDepth, onError)
+}

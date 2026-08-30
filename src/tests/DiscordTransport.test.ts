@@ -26,6 +26,19 @@ describe("DiscordTransport", () => {
       expect(transport.discordClient).toBeUndefined()
     })
 
+    it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+      "rejects invalid maxLazyLogDepth %s",
+      (maxLazyLogDepth) => {
+        expect(() => new DiscordTransport({ maxLazyLogDepth })).toThrow(
+          RangeError
+        )
+      }
+    )
+
+    it("accepts null as an unlimited lazy log depth", () => {
+      expect(new DiscordTransport({ maxLazyLogDepth: null })).toBeDefined()
+    })
+
     it("handles Discord API Token successfully", () => {
       const options: DiscordTransportStreamOptions = {
         discordToken: "EXAMPLE_API_TOKEN",
@@ -240,6 +253,39 @@ describe("DiscordTransport", () => {
 
       expect(send).toHaveBeenCalledWith({
         content: expectedContent,
+        allowedMentions: { parse: [] },
+      })
+    })
+
+    it("rejects lazy log functions before invocation when configured with zero", () => {
+      const send = vi.fn(async () => ({}))
+      const lazyLog = vi.fn(() => "sensitive")
+      const warn = vi.fn()
+      transport = new DiscordTransport({ maxLazyLogDepth: 0 })
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+      transport.on("warn", warn)
+
+      transport.log(lazyLog)
+
+      expect(lazyLog).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledWith(expect.any(RangeError))
+      expect(send).toHaveBeenCalledWith({
+        content: "[Lazy log depth limit exceeded]",
+        allowedMentions: { parse: [] },
+      })
+    })
+
+    it("allows unlimited lazy log depth when configured with null", () => {
+      const send = vi.fn(async () => ({}))
+      const nestedLazyLog = (remaining: number): unknown =>
+        remaining === 0 ? "resolved" : () => nestedLazyLog(remaining - 1)
+      transport = new DiscordTransport({ maxLazyLogDepth: null })
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+
+      transport.log(nestedLazyLog(20))
+
+      expect(send).toHaveBeenCalledWith({
+        content: "resolved",
         allowedMentions: { parse: [] },
       })
     })
