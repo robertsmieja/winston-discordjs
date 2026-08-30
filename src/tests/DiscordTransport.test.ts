@@ -3,6 +3,7 @@ import DiscordTransport, {
   DiscordTransportStreamOptions,
 } from "../DiscordTransport"
 import * as Discord from "discord.js"
+import * as logform from "logform"
 
 vi.mock("discord.js")
 
@@ -324,6 +325,23 @@ describe("DiscordTransport", () => {
       expect(warn).toHaveBeenCalledWith(fakeError)
     })
 
+    it("emits warn and suppresses output when a formatter throws", () => {
+      const fakeError = new Error("format failed")
+      const format = logform.format(() => {
+        throw fakeError
+      })()
+      const send = vi.fn(async () => ({}))
+      transport = new DiscordTransport({ format })
+      transport.discordChannel = { send } as unknown as Discord.TextChannel
+      const warn = vi.fn()
+      transport.on("warn", warn)
+
+      transport.log({ level: "info", message: "sensitive" })
+
+      expect(warn).toHaveBeenCalledWith(fakeError)
+      expect(send).not.toHaveBeenCalled()
+    })
+
     it("handles (string, () => {})) correctly", () => {
       const callback = vi.fn()
 
@@ -404,6 +422,42 @@ describe("DiscordTransport", () => {
         transport.close()
 
         expect(client.destroy).not.toHaveBeenCalled()
+      })
+
+      it("does not send queued logs after close", async () => {
+        let resolveChannel!: (channel: Discord.TextChannel) => void
+        const channelPromise = new Promise<Discord.TextChannel>((resolve) => {
+          resolveChannel = resolve
+        })
+        const send = vi.fn(async () => ({}))
+        const channel = Object.create(
+          Discord.TextChannel.prototype
+        ) as Discord.TextChannel
+        channel.send = send as Discord.TextChannel["send"]
+        const destroy = vi.fn()
+
+        vi.spyOn(Discord, "Client").mockImplementationOnce(function (
+          this: any
+        ) {
+          this.login = vi.fn(() => Promise.resolve("token"))
+          this.on = vi.fn()
+          this.destroy = destroy
+          this.channels = { fetch: vi.fn(() => channelPromise) }
+          return this
+        } as any)
+
+        transport = new DiscordTransport({
+          discordToken: "token",
+          discordChannel: "12345",
+        })
+        transport.log("queued log")
+        transport.close()
+        resolveChannel(channel)
+        await channelPromise
+        await Promise.resolve()
+
+        expect(destroy).toHaveBeenCalledTimes(1)
+        expect(send).not.toHaveBeenCalled()
       })
 
       it("handles undefined discordClient", () => {

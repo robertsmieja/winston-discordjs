@@ -21,6 +21,7 @@ export class DiscordTransport extends TransportStream {
   discordClient?: Client
   private discordChannelPromise?: Promise<TextChannel | undefined>
   private ownsDiscordClient = false
+  private transportClosed = false
 
   constructor(opts?: DiscordTransportStreamOptions) {
     super(opts)
@@ -71,6 +72,8 @@ export class DiscordTransport extends TransportStream {
     channel: TextChannel,
     logMessage: Exclude<ReturnType<typeof handleInfo>, undefined>
   ): void {
+    if (this.transportClosed) return
+
     try {
       let messagePromise: Promise<Message>
       if (Array.isArray(logMessage)) {
@@ -103,7 +106,9 @@ export class DiscordTransport extends TransportStream {
     if (!this.silent && info !== undefined && info !== null) {
       let logMessage: ReturnType<typeof handleInfo>
       try {
-        logMessage = handleInfo(info, this.format, this.level)
+        logMessage = handleInfo(info, this.format, this.level, (error) => {
+          this.emit("warn", error)
+        })
       } catch (error) {
         this.emit("warn", error)
         logMessage = undefined
@@ -124,6 +129,7 @@ export class DiscordTransport extends TransportStream {
   }
 
   close(): void {
+    this.transportClosed = true
     if (this.discordClient && this.ownsDiscordClient) {
       this.discordClient.destroy()
     }

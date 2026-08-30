@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import {
   isTransformableInfo,
   handlePrimitive,
@@ -506,11 +506,26 @@ describe("LogHandlers", () => {
     })
 
     it("fails closed when a format throws", () => {
+      const fakeError = new Error("format failed")
       const throwingFormat = logform.format(() => {
-        throw new Error("format failed")
+        throw fakeError
       })()
+      const onError = vi.fn()
 
-      expect(handleObject(transformableInfo, throwingFormat)).toBeUndefined()
+      expect(
+        handleObject(transformableInfo, throwingFormat, undefined, onError)
+      ).toBeUndefined()
+      expect(onError).toHaveBeenCalledWith(fakeError)
+    })
+
+    it("serializes a plain object returned by a formatter", () => {
+      const objectFormat = logform.format(
+        () => ({ formatted: "value" }) as logform.TransformableInfo
+      )()
+
+      expect(handleObject(transformableInfo, objectFormat)).toBe(
+        '{"formatted":"value"}'
+      )
     })
 
     it("handles Errors without stack", () => {
@@ -672,8 +687,12 @@ describe("LogHandlers", () => {
 
     it("stops self-returning lazy log functions", () => {
       const recursive = (): typeof recursive => recursive
+      const onError = vi.fn()
 
-      expect(handleInfo(recursive)).toBeUndefined()
+      expect(handleInfo(recursive, undefined, undefined, onError)).toBe(
+        "[Lazy log depth limit exceeded]"
+      )
+      expect(onError).toHaveBeenCalledWith(expect.any(RangeError))
     })
 
     it("falls back to JSON when reading toString throws", () => {

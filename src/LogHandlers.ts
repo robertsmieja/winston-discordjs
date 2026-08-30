@@ -88,6 +88,9 @@ const safeStringify = (value: any): string => {
 }
 
 const MAX_LAZY_LOG_DEPTH = 16
+const LAZY_LOG_DEPTH_EXCEEDED = "[Lazy log depth limit exceeded]"
+
+type HandleError = (error: unknown) => void
 
 export const handleLogform = (
   info: TransformableInfo,
@@ -182,16 +185,18 @@ export const handleLogform = (
 export const handleObject = (
   info: Exclude<any, Primitive>,
   format?: Format,
-  level?: string
+  level?: string,
+  onError?: HandleError
 ): string | [string, MessageEmbed] | undefined => {
   if (isTransformableInfo(info)) {
     if (format) {
       let formattedInfo: TransformableInfo | boolean
       try {
         formattedInfo = format.transform(info)
-      } catch {
+      } catch (error) {
         // A formatter can touch hostile getters or proxies. Fail closed instead
         // of emitting unformatted data that the formatter may have redacted.
+        onError?.(error)
         return undefined
       }
 
@@ -200,7 +205,7 @@ export const handleObject = (
       if (isTransformableInfo(formattedInfo)) {
         return handleLogform(formattedInfo, level)
       } else {
-        return handleInfo(formattedInfo, undefined, level)
+        return handleInfoAtDepth(formattedInfo, undefined, level, 0, onError)
       }
     } else {
       return handleLogform(info, level)
@@ -249,26 +254,38 @@ const handleInfoAtDepth = (
   info: unknown,
   format?: Format,
   level?: string,
-  lazyLogDepth = 0
+  lazyLogDepth = 0,
+  onError?: HandleError
 ): string | [string, MessageEmbed] | undefined => {
   if (isPrimitive(info)) {
     return handlePrimitive(info)
   } else if (typeof info === "function") {
-    if (lazyLogDepth >= MAX_LAZY_LOG_DEPTH) return undefined
+    if (lazyLogDepth >= MAX_LAZY_LOG_DEPTH) {
+      onError?.(new RangeError(LAZY_LOG_DEPTH_EXCEEDED))
+      return LAZY_LOG_DEPTH_EXCEEDED
+    }
 
     try {
-      return handleInfoAtDepth(info(), format, level, lazyLogDepth + 1)
-    } catch {
+      return handleInfoAtDepth(
+        info(),
+        format,
+        level,
+        lazyLogDepth + 1,
+        onError
+      )
+    } catch (error) {
+      onError?.(error)
       return undefined
     }
   } else {
-    return handleObject(info, format, level)
+    return handleObject(info, format, level, onError)
   }
 }
 
 export const handleInfo = (
   info: unknown,
   format?: Format,
-  level?: string
+  level?: string,
+  onError?: HandleError
 ): string | [string, MessageEmbed] | undefined =>
-  handleInfoAtDepth(info, format, level, 0)
+  handleInfoAtDepth(info, format, level, 0, onError)
