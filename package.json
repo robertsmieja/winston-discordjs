@@ -13,7 +13,7 @@
   "description": "Winston Transport using Discord.js",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@release-it/conventional-changelog": "^12.0.0",
+    "@release-it/conventional-changelog": "^12.0.2",
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^26.3.0",
     "@typescript-eslint/eslint-plugin": "^8.68.0",
