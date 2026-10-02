@@ -2,7 +2,7 @@
   "author": "Robert Smieja",
   "bugs": "https://github.com/robertsmieja/winston-discordjs/issues",
   "dependencies": {
-    "@types/ws": "^8.18.1",
+    "@types/ws": "^8.18.2",
     "logform": "^2.7.0",
     "utility-types": "^3.11.0",
     "winston-transport": "^4.9.0"
